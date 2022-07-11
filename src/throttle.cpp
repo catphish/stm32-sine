@@ -19,6 +19,7 @@
 
 #include "throttle.h"
 #include "my_math.h"
+#include "inc_encoder.h"
 
 #define POT_SLACK 200
 
@@ -28,6 +29,7 @@ float Throttle::brknom;
 float Throttle::brknompedal;
 float Throttle::brkmax;
 float Throttle::brkcruise;
+float Throttle::regenrampstr;
 int Throttle::idleSpeed;
 int Throttle::cruiseSpeed;
 float Throttle::speedkp;
@@ -82,24 +84,26 @@ float Throttle::DigitsToPercent(int potval, int potidx)
 
 float Throttle::CalcThrottle(float potnom, float pot2nom, bool brkpedal)
 {
-   float scaledBrkMax = brkpedal ? brknompedal : brkmax;
+   float rotorfreq = FP_TOFLOAT(Encoder::GetRotorFrequency());
 
-   //Never reach 0, because that can spin up the motor
-   scaledBrkMax = -0.1 + (scaledBrkMax * pot2nom) / 100.0f;
+   float scaledBrkMax = brkpedal ? brknompedal : brkmax;
+   //Scale BrkMax according to pot2nom
+   scaledBrkMax = scaledBrkMax * pot2nom / 100.0f;
+   //Scale BrkMax according to rotor speed
+   scaledBrkMax = scaledBrkMax * rotorfreq / regenrampstr;
+   //Cap at between -0.1 and original minimum
+   scaledBrkMax = MIN(scaledBrkMax, -0.1f);
+   scaledBrkMax = MAX(scaledBrkMax, (brkpedal ? brknompedal : brkmax));
 
    if (brkpedal)
    {
       potnom = scaledBrkMax;
    }
-   else if (potnom < brknom)
-   {
-      potnom -= brknom;
-      potnom = -(potnom * scaledBrkMax / brknom);
-   }
    else
    {
-      potnom -= brknom;
-      potnom = 100.0f * potnom / (100.0f - brknom);
+      //Scale potnom input (0 to 100) to torque scale (offthrotregenLimited to 100)
+      float fullRange = 100.0f - scaledBrkMax;
+      potnom = scaledBrkMax + potnom * fullRange / 100.0f;
    }
 
    return potnom;

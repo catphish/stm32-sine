@@ -175,7 +175,7 @@ float VehicleControl::ProcessThrottle()
       throtSpnt = GetUserThrottleCommand();
    }
 
-   bool determineDirection = GetCruiseCreepCommand(finalSpnt, throtSpnt);
+   GetCruiseCreepCommand(finalSpnt, throtSpnt);
    finalSpnt = Throttle::RampThrottle(finalSpnt);
 
    if (hwRev != HW_TESLA)
@@ -203,24 +203,6 @@ float VehicleControl::ProcessThrottle()
       DigIo::brk_out.Set();
    else
       DigIo::brk_out.Clear();
-
-   if (determineDirection)
-   {
-      float rotorfreq = FP_TOFLOAT(Encoder::GetRotorFrequency());
-      float brkrampstr = Param::GetFloat(Param::regenrampstr);
-
-      if (rotorfreq < brkrampstr && finalSpnt < 0)
-      {
-         finalSpnt = (rotorfreq / brkrampstr) * finalSpnt;
-      }
-
-#if CONTROL == CTRL_FOC
-      if (finalSpnt < 0)
-         finalSpnt *= Encoder::GetRotorDirection();
-      else //inconsistency here: in slip control negative always means regen
-         finalSpnt *= Param::GetInt(Param::dir);
-#endif // CONTROL
-   }
 
    return finalSpnt;
 }

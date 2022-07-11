@@ -299,6 +299,7 @@ void Param::Change(Param::PARAM_NUM paramNum)
          Throttle::brknom = Param::GetFloat(Param::regentravel);
          Throttle::brknompedal = Param::GetFloat(Param::brakeregen);
          Throttle::regenRamp = Param::GetFloat(Param::regenramp);
+         Throttle::regenrampstr = Param::GetFloat(Param::regenrampstr);
          Throttle::brkmax = Param::GetFloat(Param::offthrotregen);
          Throttle::brkcruise = Param::GetFloat(Param::cruiseregen);
          Throttle::throtmax = Param::GetFloat(Param::throtmax);

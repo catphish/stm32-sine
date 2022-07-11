@@ -44,6 +44,7 @@ class Throttle
       static float brknompedal;
       static float brkmax;
       static float brkcruise;
+      static float regenrampstr;
       static float throtmax;
       static float throtmin;
       static int idleSpeed;
