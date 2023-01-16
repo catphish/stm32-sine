@@ -52,8 +52,7 @@ class PwmGeneration
       static s32fp ProcessCurrents();
       static s32fp ProcessCurrents(s32fp& id, s32fp& iq);
       static void CalcNextAngleSync();
-      static void CalcNextAngleAsync(int dir);
-      static void CalcNextAngleConstant(int dir);
+      static void CalcNextAngleAsync();
       static void Charge();
       static void AcHeat();
       static s32fp GetIlMax(s32fp il1, s32fp il2);

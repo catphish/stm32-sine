@@ -394,8 +394,12 @@ extern "C" int main(void)
    Param::Change(Param::nodeid);
    write_bootloader_pininit(Param::GetBool(Param::bootprec), Param::GetBool(Param::pwmpol));
 
-   while(1)
+   while(1) {
+      if (Param::GetInt(Param::canperiod) == CAN_PERIOD_CONTINUOUS)
+         can->SendAll();
       t.Run();
+
+   }
 
    return 0;
 }

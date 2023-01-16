@@ -214,12 +214,10 @@ float VehicleControl::ProcessThrottle()
          finalSpnt = (rotorfreq / brkrampstr) * finalSpnt;
       }
 
-#if CONTROL == CTRL_FOC
       if (finalSpnt < 0)
          finalSpnt *= Encoder::GetRotorDirection();
-      else //inconsistency here: in slip control negative always means regen
+      else
          finalSpnt *= Param::GetInt(Param::dir);
-#endif // CONTROL
    }
 
    return finalSpnt;
@@ -378,38 +376,6 @@ float VehicleControl::ProcessUdc()
       DigIo::prec_out.Clear();
       ErrorMessage::Post(ERR_PRECHARGE);
    }
-
-   #if CONTROL == CTRL_SINE
-   {
-      float udcnom = Param::GetFloat(Param::udcnom);
-      float boost = Param::GetFloat(Param::boost);
-      float fweak;
-
-      if (Param::GetInt(Param::potnom) > 35)
-      {
-         fweak = MAP(Param::GetFloat(Param::potnom), 36, 100, (Param::GetFloat(Param::fweakstrt)), (Param::GetFloat(Param::fweak)));
-      }
-      else
-      {
-         fweak = Param::GetFloat(Param::fweakstrt);
-      }
-
-      if (udcnom > 0)
-      {
-         float udcdiff = udcfp - udcnom;
-         float factor = 1.0 + udcdiff / udcnom;
-         //increase fweak on voltage above nominal
-         fweak = fweak * factor;
-         //decrease boost on voltage above nominal
-         boost = boost / factor;
-      }
-
-      Param::SetFloat(Param::fweakcalc, fweak);
-      Param::SetFloat(Param::boostcalc, boost);
-      MotorVoltage::SetWeakeningFrq(fweak);
-      MotorVoltage::SetBoost(boost);
-   }
-   #endif // CONTROL
 
    Param::SetFloat(Param::udc, udcfp);
 
