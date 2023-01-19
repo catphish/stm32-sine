@@ -338,7 +338,6 @@ s32fp PwmGeneration::GetCurrent(AnaIn& input, s32fp offset, s32fp gain)
 {
    s32fp il = FP_FROMINT(input.Get());
    il -= offset;
-   il -= 305;
    return FP_DIV(il, gain);
 }
 

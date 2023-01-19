@@ -55,6 +55,11 @@ void PwmGeneration::Run()
       s32fp error = ilmaxtarget - ilmax;
       s32fp correction = FP_MUL(error, curkp);
 
+      // Calculate DC current
+      s32fp idc = ilmax * SineCore::GetAmp() / SineCore::MAXAMP;
+      idc = FP_MUL(idc, FP_FROMFLT(1.2247)); // Multiply by sqrt(3), divide by sqrt(2)
+      Param::SetFixed(Param::idc, idc);
+
       // Apply a correction to the amplitude
       amp += correction;
 
