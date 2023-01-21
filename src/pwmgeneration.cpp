@@ -147,7 +147,6 @@ void PwmGeneration::SetOpmode(int _opmode)
          timer_enable_break_main_output(PWM_TIMER);
          ConfigureChargeController();
          break;
-      case MOD_MANUAL:
       case MOD_RUN:
          EnableOutput();
          break;

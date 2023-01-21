@@ -38,7 +38,7 @@
 
 void PwmGeneration::Run()
 {
-   if (opmode == MOD_MANUAL || opmode == MOD_RUN)
+   if (opmode == MOD_RUN)
    {
       static int32_t amp = 0;
       int dir = Param::GetInt(Param::dir);

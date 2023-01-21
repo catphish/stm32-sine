@@ -25,7 +25,7 @@
    3. Display values
  */
 //Next param id (increase when adding new parameter!): 148
-//Next value Id: 2049
+//Next value Id: 2051
 /*              category     name         unit       min     max     default id */
 
 #define MOTOR_PARAMETERS_COMMON \
@@ -172,6 +172,8 @@
 #define VALUES_SINE \
     VALUE_ENTRY(ilmax,       "A",     2005 ) \
     VALUE_ENTRY(uac,         "V",     2006 ) \
+    VALUE_ENTRY(fslipspnt,   "Hz",    2049 ) \
+    VALUE_ENTRY(ampnom,      "dig",   2050 ) \
 
 #define VALUES_FOC \
     VALUE_ENTRY(id,      "A",     2003 ) \
@@ -190,8 +192,6 @@
     DERATE_PARAMETERS_COMMON \
     CHARGER_PARAMETERS \
     AUTOMATION_CONTACT_PWM_COMM_PARAMETERS \
-    PARAM_ENTRY(CAT_TEST,    fslipspnt,   "Hz",      -100,   1000,   0,      0   ) \
-    PARAM_ENTRY(CAT_TEST,    ampnom,      "%",       0,      100,    0,      0   ) \
     VALUE_BLOCK1 \
     VALUES_SINE \
     VALUE_BLOCK2
@@ -218,7 +218,7 @@
 #endif // CONTROL
 
 /***** Enum String definitions *****/
-#define OPMODES      "0=Off, 1=Run, 2=ManualRun, 3=Boost, 4=Buck, 5=Sine, 6=AcHeat"
+#define OPMODES      "0=Off, 1=Run, 2=Boost, 3=Buck, 4=Sine, 5=AcHeat"
 #define PWMFRQS      "0=17.6kHz, 1=8.8kHz, 2=4.4KHz"
 #define PWMPOLS      "0=ActHigh, 1=ActLow"
 #define DIRS         "-1=Reverse, 0=Neutral, 1=Forward"
@@ -301,7 +301,6 @@ enum _modes
 {
    MOD_OFF = 0,
    MOD_RUN,
-   MOD_MANUAL,
    MOD_BOOST,
    MOD_BUCK,
    MOD_ACHEAT,
