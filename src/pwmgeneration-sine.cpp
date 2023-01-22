@@ -54,6 +54,7 @@ void PwmGeneration::Run()
       s32fp throtcur = Param::Get(Param::throtcur);
       s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
       s32fp error = ilmaxtarget - ilmax;
+      int32_t maxamp = ((SineCore::MAXAMP << 9) | 0x1FF);
 
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
 
@@ -65,16 +66,17 @@ void PwmGeneration::Run()
       // Apply a correction to the amplitude
       s32fp correction_i = FP_MUL(error, curki);
       amp_i += correction_i;
-      if (amp_i > 16777215)
-         amp_i = 16777215;
+
+      if (amp_i > maxamp)
+         amp_i = maxamp;
       else if (amp_i < 0)
          amp_i = 0;
 
       s32fp correction_p = FP_MUL(error, curkp);
       int32_t amp = amp_i + correction_p;
 
-      if (amp > 16777215)
-         amp = 16777215;
+      if (amp > maxamp)
+         amp = maxamp;
       else if (amp < 0)
          amp = 0;
 
