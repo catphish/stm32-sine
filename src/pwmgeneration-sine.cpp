@@ -106,8 +106,8 @@ void PwmGeneration::SetTorquePercent(float torque)
    ampnom = FP_FROMFLT(ABS(torque));
    fslip = FP_FROMFLT(torque / 100.f * fslipmax);
 
-   Param::Set(Param::ampnom, ampnom);
-   Param::Set(Param::fslipspnt, fslip);
+   Param::SetFixed(Param::ampnom, ampnom);
+   Param::SetFixed(Param::fslipspnt, fslip);
 
    slipIncr = FRQ_TO_ANGLE(fslip);
 }
