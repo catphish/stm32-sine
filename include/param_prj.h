@@ -25,7 +25,7 @@
    3. Display values
  */
 //Next param id (increase when adding new parameter!): 148
-//Next value Id: 2051
+//Next value Id: 2052
 /*              category     name         unit       min     max     default id */
 
 #define MOTOR_PARAMETERS_COMMON \
@@ -40,12 +40,12 @@
     PARAM_ENTRY(CAT_MOTOR,   throtcur,    "A/%",     0,      10,     1,      105 ) \
     PARAM_ENTRY(CAT_MOTOR,   snsm,        SNS_M,     12,     23,     12,     46  ) \
     PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      20000,  32,     107 ) \
+    PARAM_ENTRY(CAT_MOTOR,   curki,       "",        0,      100000, 20000,  108 ) \
 
 #define MOTOR_PARAMETERS_SINE \
     PARAM_ENTRY(CAT_MOTOR,   fslipmax,    "Hz",      0.3,    10,     3,      33  ) \
 
 #define MOTOR_PARAMETERS_FOC \
-    PARAM_ENTRY(CAT_MOTOR,   curki,       "",        0,      100000, 20000,  108 ) \
     PARAM_ENTRY(CAT_MOTOR,   vlimflt,     "",        0,      16,     10,     145 ) \
     PARAM_ENTRY(CAT_MOTOR,   vlimmargin,  "dig",     0,      10000,  2500,   141 ) \
     PARAM_ENTRY(CAT_MOTOR,   fwcurmax,    "A",       -1000,  0,     -100,    144 ) \
@@ -174,6 +174,7 @@
     VALUE_ENTRY(uac,         "V",     2006 ) \
     VALUE_ENTRY(fslipspnt,   "Hz",    2049 ) \
     VALUE_ENTRY(ampnom,      "dig",   2050 ) \
+    VALUE_ENTRY(ilmaxtarget, "A",     2051 ) \
 
 #define VALUES_FOC \
     VALUE_ENTRY(id,      "A",     2003 ) \
