@@ -236,7 +236,7 @@
 #define POTMODES     "0=SingleRegen, 1=DualChannel, 2=CAN, 3=CANDual, 4=BiDir, 6=CANBiDir"
 #define CANSPEEDS    "0=250k, 1=500k, 2=800k, 3=1M"
 #define CANIOS       "1=Cruise, 2=Start, 4=Brake, 8=Fwd, 16=Rev, 32=Bms"
-#define CANPERIODS   "0=100ms, 1=10ms, 2=Continuous"
+#define CANPERIODS   "0=100ms, 1=10ms, 2=1ms"
 #define HWREVS       "0=Rev1, 1=Rev2, 2=Rev3, 3=Tesla, 4=BluePill, 5=Prius"
 #define SWAPS        "0=None, 1=Currents12, 2=SinCos, 4=PWMOutput13, 8=PWMOutput23"
 #define STATUS       "0=None, 1=UdcLow, 2=UdcHigh, 4=UdcBelowUdcSw, 8=UdcLim, 16=EmcyStop, 32=MProt, 64=PotPressed, 128=TmpHs, 256=WaitStart"
@@ -256,7 +256,7 @@
 
 #define CAN_PERIOD_100MS      0
 #define CAN_PERIOD_10MS       1
-#define CAN_PERIOD_CONTINUOUS 2
+#define CAN_PERIOD_1MS        2
 
 #if CONTROL == CTRL_SINE
 #define VERSTR STRINGIFY(4=VER-sine)

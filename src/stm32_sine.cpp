@@ -247,6 +247,8 @@ static void Ms1Task(void)
          speedCnt--;
       }
    }
+   if (Param::GetInt(Param::canperiod) == CAN_PERIOD_1MS)
+      can->SendAll();
 }
 
 /** This function is called when the user changes a parameter */
@@ -387,8 +389,6 @@ extern "C" int main(void)
    write_bootloader_pininit(Param::GetBool(Param::bootprec), Param::GetBool(Param::pwmpol));
 
    while(1) {
-      if (Param::GetInt(Param::canperiod) == CAN_PERIOD_CONTINUOUS)
-         can->SendAll();
       t.Run();
 
    }
