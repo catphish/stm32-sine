@@ -24,8 +24,8 @@
    2. Temporary parameters (id = 0)
    3. Display values
  */
-//Next param id (increase when adding new parameter!): 148
-//Next value Id: 2052
+//Next param id (increase when adding new parameter!): 146
+//Next value Id: 2053
 /*              category     name         unit       min     max     default id */
 
 #define MOTOR_PARAMETERS_COMMON \
@@ -42,7 +42,11 @@
     PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      20000,  32,     107 ) \
 
 #define MOTOR_PARAMETERS_SINE \
-    PARAM_ENTRY(CAT_MOTOR,   fslipmax,    "Hz",      0.3,    10,     3,      33  ) \
+    PARAM_ENTRY(CAT_MOTOR,   mfslipmax,   "Hz",      0.3,    20,     3,      33  ) \
+    PARAM_ENTRY(CAT_MOTOR,   mfslipmin,   "Hz",      0,      20,     3,      34  ) \
+    PARAM_ENTRY(CAT_MOTOR,   rfslipmax,   "Hz",      0.3,    20,     3,      35  ) \
+    PARAM_ENTRY(CAT_MOTOR,   rfslipmin,   "Hz",      0,      20,     3,      36  ) \
+    PARAM_ENTRY(CAT_MOTOR,   regenwait,   "A",       0,      1000,   0,      37  ) \
 
 #define MOTOR_PARAMETERS_FOC \
     PARAM_ENTRY(CAT_MOTOR,   curki,       "",        0,      100000, 20000,  108 ) \
@@ -151,6 +155,7 @@
     VALUE_ENTRY(pot,         "dig",   2015 ) \
     VALUE_ENTRY(pot2,        "dig",   2016 ) \
     VALUE_ENTRY(potnom,      "%",     2017 ) \
+    VALUE_ENTRY(torque,      "%",     2052 ) \
     VALUE_ENTRY(dir,         DIRS,    2018 ) \
     VALUE_ENTRY(tmphs,       "°C",    2019 ) \
     VALUE_ENTRY(tmpm,        "°C",    2020 ) \

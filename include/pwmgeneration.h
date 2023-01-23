@@ -72,6 +72,7 @@ class PwmGeneration
       static int opmode;
       static s32fp ilofs[2];
       static int polePairRatio;
+      static s32fp torque;
 };
 
 #endif // PWMGENERATION_H

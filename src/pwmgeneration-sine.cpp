@@ -40,16 +40,87 @@ void PwmGeneration::Run()
 {
    if (opmode == MOD_RUN)
    {
-      static int32_t amp = 0;
-      int dir = Param::GetInt(Param::dir);
-
-      Encoder::UpdateRotorAngle(dir);
+      // Process currents and get ilmax
       ProcessCurrents();
+      s32fp ilmax = Param::Get(Param::ilmax);
+
+      // amp is the amplitude of the sine wave output
+      static int32_t amp = 0;
+
+      int dir = Param::GetInt(Param::dir);
+      int rotorDirection = Encoder::GetRotorDirection();
+      int regenwait = Param::Get(Param::regenwait);
+
+      // Detect direction of torque request
+      // This is static so that it is not reset when the torque request is zero
+      static int torqueDirection = 0;
+      if (torque > 0)
+         torqueDirection = 1;
+      else if (torque < 0)
+         torqueDirection = -1;
+
+      static int previousTorqueDirection = 0;
+      static int torqueDirectionChange = 0;
+
+      // If torque request changes direction, set a flag to disallow current request
+      if (torqueDirection != previousTorqueDirection)
+         torqueDirectionChange = 1;
+
+      // When current falls below regenwait, re-enable current and reset amp integrator
+      if (torqueDirectionChange && ilmax < regenwait)
+      {
+         torqueDirectionChange = 0;
+         amp = 0;
+      }
+      previousTorqueDirection = torqueDirection;
+
+      s32fp fslipmax;
+      s32fp fslipmin;
+      // Torque direction mateches direction of rotation, use "m" parameters
+      if (torqueDirection == rotorDirection)
+      {
+         fslipmax = Param::Get(Param::mfslipmax);
+         fslipmin = Param::Get(Param::mfslipmin);
+      }
+      // Torque direction does not match direction of rotation, use "r" parameters
+      else
+      {
+         fslipmax = Param::Get(Param::rfslipmax);
+         fslipmin = Param::Get(Param::rfslipmin);
+      }
+
+      // If torque direction is changing, set ampnom to zero
+      if (torqueDirectionChange)
+      {
+         ampnom = 0;
+      }
+      else
+      {
+         ampnom = ABS(torque);
+      }
+
+      // Set slip according to torque request and fslipmax
+      fslip = FP_DIV(FP_MUL(torque, fslipmax), FP_FROMINT(100));
+
+      // Set ensure slip is at least fslipmin in the appropriate direction
+      if (torqueDirection == 1 && fslip < fslipmin)
+         fslip = fslipmin;
+      else if (torqueDirection == -1 && fslip > -fslipmin)
+         fslip = -fslipmin;
+
+      // Set parameters for logging
+      Param::SetFixed(Param::ampnom, ampnom);
+      Param::SetFixed(Param::fslipspnt, fslip);
+
+      // Set slip increment angle
+      slipIncr = FRQ_TO_ANGLE(fslip);
+
+      // Calculate current angle
+      Encoder::UpdateRotorAngle(dir);
       CalcNextAngleAsync();
 
       // Adjust amplitude according to requested and measured current
       s32fp curkp = Param::Get(Param::curkp);
-      s32fp ilmax = Param::Get(Param::ilmax);
       s32fp throtcur = Param::Get(Param::throtcur);
 
       s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
@@ -105,15 +176,7 @@ void PwmGeneration::Run()
 
 void PwmGeneration::SetTorquePercent(float torque)
 {
-   float fslipmax = Param::GetFloat(Param::fslipmax);
-
-   ampnom = FP_FROMFLT(ABS(torque));
-   fslip = FP_FROMFLT(torque / 100.f * fslipmax);
-
-   Param::SetFixed(Param::ampnom, ampnom);
-   Param::SetFixed(Param::fslipspnt, fslip);
-
-   slipIncr = FRQ_TO_ANGLE(fslip);
+   PwmGeneration::torque = FP_FROMFLT(torque);
 }
 
 void PwmGeneration::PwmInit()
