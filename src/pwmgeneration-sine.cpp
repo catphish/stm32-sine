@@ -40,7 +40,7 @@ void PwmGeneration::Run()
 {
    if (opmode == MOD_RUN)
    {
-      static int32_t amp_i = 0;
+      static int32_t amp = 0;
       int dir = Param::GetInt(Param::dir);
 
       Encoder::UpdateRotorAngle(dir);
@@ -49,13 +49,10 @@ void PwmGeneration::Run()
 
       // Adjust amplitude according to requested and measured current
       s32fp curkp = Param::Get(Param::curkp);
-      s32fp curki = Param::Get(Param::curki);
       s32fp ilmax = Param::Get(Param::ilmax);
       s32fp throtcur = Param::Get(Param::throtcur);
-      s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
-      s32fp error = ilmaxtarget - ilmax;
-      int32_t maxamp = ((SineCore::MAXAMP << 9) | 0x1FF);
 
+      s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
 
       // Calculate DC current
@@ -64,17 +61,12 @@ void PwmGeneration::Run()
       Param::SetFixed(Param::idc, idc);
 
       // Apply a correction to the amplitude
-      s32fp correction_i = FP_MUL(error, curki);
-      amp_i += correction_i;
+      s32fp ierror = ilmaxtarget - ilmax;
+      s32fp correction = FP_MUL(ierror, curkp);
+      amp += correction;
 
-      if (amp_i > maxamp)
-         amp_i = maxamp;
-      else if (amp_i < 0)
-         amp_i = 0;
-
-      s32fp correction_p = FP_MUL(error, curkp);
-      int32_t amp = amp_i + correction_p;
-
+      // Limit amplitude to 0..MAXAMP, shift by 9 bits to get more resolution
+      int32_t maxamp = ((SineCore::MAXAMP << 9) | 0x1FF);
       if (amp > maxamp)
          amp = maxamp;
       else if (amp < 0)
