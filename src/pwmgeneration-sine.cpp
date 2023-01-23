@@ -45,64 +45,51 @@ void PwmGeneration::Run()
       s32fp ilmax = Param::Get(Param::ilmax);
 
       // amp is the amplitude of the sine wave output
+      // This value persists and is modified each cycle
       static int32_t amp = 0;
 
       int dir = Param::GetInt(Param::dir);
       int rotorDirection = Encoder::GetRotorDirection();
-      int regenwait = Param::Get(Param::regenwait);
 
-      // Detect direction of torque request
-      // This is static so that it is not reset when the torque request is zero
+      // Detect change in direction of torque request. Reset "amp" integrator on direction switch.
+      // This prevents the reverse slip starting up with excess voltage.
+      // This needs to happen when current is zero. This verion assumes current it zero when the
+      // direction is switched, which seems to be the case when slip is set correctly.
       static int torqueDirection = 0;
-      if (torque > 0)
-         torqueDirection = 1;
-      else if (torque < 0)
-         torqueDirection = -1;
-
-      static int previousTorqueDirection = 0;
-      static int torqueDirectionChange = 0;
-
-      // If torque request changes direction, set a flag to disallow current request
-      if (torqueDirection != previousTorqueDirection)
-         torqueDirectionChange = 1;
-
-      // When current falls below regenwait, re-enable current and reset amp integrator
-      if (torqueDirectionChange && ilmax < regenwait)
+      if (torque > 0 && torqueDirection != 1)
       {
-         torqueDirectionChange = 0;
+         torqueDirection = 1;
          amp = 0;
       }
-      previousTorqueDirection = torqueDirection;
+      else if (torque < 0 && torqueDirection != -1)
+      {
+         torqueDirection = -1;
+         amp = 0;
+      }
 
       s32fp fslipmax;
       s32fp fslipmin;
-      // Torque direction mateches direction of rotation, use "m" parameters
+      // If torque direction mateches direction of rotation, use "m" parameters
       if (torqueDirection == rotorDirection)
       {
          fslipmax = Param::Get(Param::mfslipmax);
          fslipmin = Param::Get(Param::mfslipmin);
       }
-      // Torque direction does not match direction of rotation, use "r" parameters
+      // If torque direction does not match direction of rotation, use "r" parameters
       else
       {
          fslipmax = Param::Get(Param::rfslipmax);
          fslipmin = Param::Get(Param::rfslipmin);
       }
 
-      // If torque direction is changing, set ampnom to zero
-      if (torqueDirectionChange)
-      {
-         ampnom = 0;
-      }
-      else
-      {
-         ampnom = ABS(torque);
-      }
+      // Set ampnom to magnitude of torque request
+      ampnom = ABS(torque);
 
       // Set slip according to torque request and fslipmax
       fslip = FP_DIV(FP_MUL(torque, fslipmax), FP_FROMINT(100));
 
       // Set ensure slip is at least fslipmin in the appropriate direction
+      // It is my hope that fslipmin can be eliminated but it's best to keep it for testing.
       if (torqueDirection == 1 && fslip < fslipmin)
          fslip = fslipmin;
       else if (torqueDirection == -1 && fslip > -fslipmin)
