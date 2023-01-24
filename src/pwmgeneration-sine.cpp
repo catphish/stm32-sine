@@ -51,35 +51,34 @@ void PwmGeneration::Run()
       int dir = Param::GetInt(Param::dir);
       int rotorDirection = Encoder::GetRotorDirection();
 
-      // Detect change in direction of torque request. Reset "amp" integrator on direction switch.
-      // This prevents the reverse slip starting up with excess voltage.
-      // This needs to happen when current is zero. This verion assumes current it zero when the
-      // direction is switched, which seems to be the case when slip is set correctly.
+      // Detect direction of torque request.
       static int torqueDirection = 0;
       if (torque > 0 && torqueDirection != 1)
       {
          torqueDirection = 1;
-         amp = 0;
       }
       else if (torque < 0 && torqueDirection != -1)
       {
          torqueDirection = -1;
-         amp = 0;
       }
 
       s32fp fslipmax;
       s32fp fslipmin;
+      s32fp throtcur;
+
       // If torque direction mateches direction of rotation, use "m" parameters
       if (torqueDirection == rotorDirection)
       {
          fslipmax = Param::Get(Param::mfslipmax);
          fslipmin = Param::Get(Param::mfslipmin);
+         throtcur = Param::Get(Param::throtcur);
       }
       // If torque direction does not match direction of rotation, use "r" parameters
       else
       {
          fslipmax = Param::Get(Param::rfslipmax);
          fslipmin = Param::Get(Param::rfslipmin);
+         throtcur = Param::Get(Param::rthrotcur);
       }
 
       // Set ampnom to magnitude of torque request
@@ -108,7 +107,6 @@ void PwmGeneration::Run()
 
       // Adjust amplitude according to requested and measured current
       s32fp curkp = Param::Get(Param::curkp);
-      s32fp throtcur = Param::Get(Param::throtcur);
 
       s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);

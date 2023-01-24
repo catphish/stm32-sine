@@ -37,11 +37,12 @@
     PARAM_ENTRY(CAT_MOTOR,   numimp,      "ppr",     8,      8192,   60,     15  ) \
     PARAM_ENTRY(CAT_MOTOR,   dirchrpm,    "rpm",     0,      20000,  100,    87  ) \
     PARAM_ENTRY(CAT_MOTOR,   dirmode,     DIRMODES,  0,      4,      1,      95  ) \
-    PARAM_ENTRY(CAT_MOTOR,   throtcur,    "A/%",     0,      10,     1,      105 ) \
+    PARAM_ENTRY(CAT_MOTOR,   throtcur,    "A/%",     0,      20,     1,      105 ) \
     PARAM_ENTRY(CAT_MOTOR,   snsm,        SNS_M,     12,     23,     12,     46  ) \
     PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      20000,  32,     107 ) \
 
 #define MOTOR_PARAMETERS_SINE \
+    PARAM_ENTRY(CAT_MOTOR,   rthrotcur,   "A/%",     0,      20,     1,      106 ) \
     PARAM_ENTRY(CAT_MOTOR,   mfslipmax,   "Hz",      0.3,    20,     3,      33  ) \
     PARAM_ENTRY(CAT_MOTOR,   mfslipmin,   "Hz",      0,      20,     3,      34  ) \
     PARAM_ENTRY(CAT_MOTOR,   rfslipmax,   "Hz",      0.3,    20,     3,      35  ) \
