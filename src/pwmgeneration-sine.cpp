@@ -48,37 +48,28 @@ void PwmGeneration::Run()
       // This value persists and is modified each cycle
       static int32_t amp = 0;
 
+      // Get requested direction from DNR switch
       int dir = Param::GetInt(Param::dir);
-      int rotorDirection = Encoder::GetRotorDirection();
 
-      // Detect direction of torque request.
-      static int torqueDirection = 0;
-      if (torque > 0 && torqueDirection != 1)
-      {
-         torqueDirection = 1;
-      }
-      else if (torque < 0 && torqueDirection != -1)
-      {
-         torqueDirection = -1;
-      }
+      // If torque is less than zero, we are in regen mode
+      int regen = torque < 0;
 
       s32fp fslipmax;
       s32fp fslipmin;
       s32fp throtcur;
-
-      // If torque direction mateches direction of rotation, use "m" parameters
-      if (torqueDirection == rotorDirection)
-      {
-         fslipmax = Param::Get(Param::mfslipmax);
-         fslipmin = Param::Get(Param::mfslipmin);
-         throtcur = Param::Get(Param::throtcur);
-      }
-      // If torque direction does not match direction of rotation, use "r" parameters
-      else
+      // If regen is requested, use "r" parameters
+      if (regen)
       {
          fslipmax = Param::Get(Param::rfslipmax);
          fslipmin = Param::Get(Param::rfslipmin);
          throtcur = Param::Get(Param::rthrotcur);
+      }
+      // If torque is positive use "m" parameters
+      else
+      {
+         fslipmax = Param::Get(Param::mfslipmax);
+         fslipmin = Param::Get(Param::mfslipmin);
+         throtcur = Param::Get(Param::throtcur);
       }
 
       // Set ampnom to magnitude of torque request
@@ -87,11 +78,10 @@ void PwmGeneration::Run()
       // Set slip according to torque request and fslipmax
       fslip = FP_DIV(FP_MUL(torque, fslipmax), FP_FROMINT(100));
 
-      // Set ensure slip is at least fslipmin in the appropriate direction
-      // It is my hope that fslipmin can be eliminated but it's best to keep it for testing.
-      if (torqueDirection == 1 && fslip < fslipmin)
+      // Ensure slip is at least fslipmin in the appropriate direction
+      if (!regen && fslip < fslipmin)
          fslip = fslipmin;
-      else if (torqueDirection == -1 && fslip > -fslipmin)
+      else if (regen && fslip > -fslipmin)
          fslip = -fslipmin;
 
       // Set parameters for logging
@@ -99,7 +89,7 @@ void PwmGeneration::Run()
       Param::SetFixed(Param::fslipspnt, fslip);
 
       // Set slip increment angle
-      slipIncr = FRQ_TO_ANGLE(fslip);
+      slipIncr = FRQ_TO_ANGLE(fslip * dir);
 
       // Calculate current angle
       Encoder::UpdateRotorAngle(dir);
