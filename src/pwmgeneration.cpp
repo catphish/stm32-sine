@@ -47,7 +47,7 @@ int      PwmGeneration::opmode;
 s32fp    PwmGeneration::ilofs[2];
 int      PwmGeneration::polePairRatio;
 int16_t  PwmGeneration::slipIncr;
-s32fp    PwmGeneration::torque;
+s32fp    PwmGeneration::torqueRequest;
 
 static int      execTicks;
 static bool     tripped;

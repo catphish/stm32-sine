@@ -52,7 +52,7 @@ void PwmGeneration::Run()
       int dir = Param::GetInt(Param::dir);
 
       // If torque is less than zero, we are in regen mode
-      int regen = torque < 0;
+      int regen = torqueRequest < 0;
 
       s32fp fslipmax;
       s32fp fslipmin;
@@ -73,16 +73,10 @@ void PwmGeneration::Run()
       }
 
       // Set ampnom to magnitude of torque request
-      ampnom = ABS(torque);
+      ampnom = ABS(torqueRequest);
 
       // Set slip according to torque request and fslipmax
-      fslip = FP_DIV(FP_MUL(torque, fslipmax), FP_FROMINT(100));
-
-      // Ensure slip is at least fslipmin in the appropriate direction
-      if (!regen && fslip < fslipmin)
-         fslip = fslipmin;
-      else if (regen && fslip > -fslipmin)
-         fslip = -fslipmin;
+      fslip = fslipmin + FP_MUL(torqueRequest, (fslipmax - fslipmin)) / 100;
 
       // Set parameters for logging
       Param::SetFixed(Param::ampnom, ampnom);
@@ -107,8 +101,11 @@ void PwmGeneration::Run()
       Param::SetFixed(Param::idc, idc);
 
       // Apply a correction to the amplitude
+      s32fp ampslew = Param::Get(Param::ampslew);
       s32fp ierror = ilmaxtarget - ilmax;
       s32fp correction = FP_MUL(ierror, curkp);
+      correction = MIN(correction, ampslew);
+      correction = MAX(correction, -ampslew);
       amp += correction;
 
       // Limit amplitude to 0..MAXAMP, shift by 9 bits to get more resolution
@@ -151,7 +148,7 @@ void PwmGeneration::Run()
 
 void PwmGeneration::SetTorquePercent(float torque)
 {
-   PwmGeneration::torque = FP_FROMFLT(torque);
+   PwmGeneration::torqueRequest = FP_FROMFLT(torque);
 }
 
 void PwmGeneration::PwmInit()
