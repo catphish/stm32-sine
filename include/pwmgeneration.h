@@ -73,6 +73,7 @@ class PwmGeneration
       static s32fp ilofs[2];
       static int polePairRatio;
       static s32fp torqueRequest;
+      static int32_t amp;
 };
 
 #endif // PWMGENERATION_H

@@ -44,10 +44,6 @@ void PwmGeneration::Run()
       ProcessCurrents();
       s32fp ilmax = Param::Get(Param::ilmax);
 
-      // amp is the amplitude of the sine wave output
-      // This value persists and is modified each cycle
-      static int32_t amp = 0;
-
       // Get requested direction from DNR switch
       int dir = Param::GetInt(Param::dir);
 
@@ -125,10 +121,11 @@ void PwmGeneration::Run()
       Param::SetFixed(Param::angle, DIGIT_TO_DEGREE(angle));
       SineCore::Calc(angle);
 
-      /* Shut down PWM on zero voltage request */
-      if (0 == amp || 0 == dir)
+      /* Shut down PWM if neutral is selected */
+      if (0 == dir)
       {
          timer_disable_break_main_output(PWM_TIMER);
+         amp = 0;
       }
       else
       {
@@ -161,6 +158,7 @@ void PwmGeneration::PwmInit()
    pwmfrq = TimerSetup(Param::GetInt(Param::deadtime), Param::GetInt(Param::pwmpol));
    slipIncr = FRQ_TO_ANGLE(fslip);
    Encoder::SetPwmFrequency(pwmfrq);
+   PwmGeneration::amp = 0;
 
    if (opmode == MOD_ACHEAT)
       AcHeatTimerSetup();
