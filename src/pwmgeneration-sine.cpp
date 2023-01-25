@@ -64,8 +64,8 @@ void PwmGeneration::Run()
       // If regen is requested, use "r" parameters
       if (regen)
       {
-         fslipmax = Param::Get(Param::rfslipmax);
-         fslipmin = Param::Get(Param::rfslipmin);
+         fslipmax = -Param::Get(Param::rfslipmax);
+         fslipmin = -Param::Get(Param::rfslipmin);
          throtcur = Param::Get(Param::rthrotcur);
       }
       // If torque is positive use "m" parameters
@@ -80,7 +80,7 @@ void PwmGeneration::Run()
       ampnom = ABS(torqueRequest);
 
       // Set slip according to torque request and fslipmax
-      fslip = fslipmin + FP_MUL(torqueRequest, (fslipmax - fslipmin)) / 100;
+      fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
 
       // Set parameters for logging
       Param::SetFixed(Param::ampnom, ampnom);
