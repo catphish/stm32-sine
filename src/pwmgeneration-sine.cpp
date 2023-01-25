@@ -101,11 +101,8 @@ void PwmGeneration::Run()
       Param::SetFixed(Param::idc, idc);
 
       // Apply a correction to the amplitude
-      s32fp ampslew = Param::Get(Param::ampslew);
       s32fp ierror = ilmaxtarget - ilmax;
       s32fp correction = FP_MUL(ierror, curkp);
-      correction = MIN(correction, ampslew);
-      correction = MAX(correction, -ampslew);
       amp += correction;
 
       // Limit amplitude to 0..MAXAMP, shift by 9 bits to get more resolution
@@ -122,7 +119,7 @@ void PwmGeneration::Run()
       SineCore::Calc(angle);
 
       /* Shut down PWM if neutral is selected */
-      if (0 == dir)
+      if (0 == amp || 0 == dir)
       {
          timer_disable_break_main_output(PWM_TIMER);
          amp = 0;
@@ -149,7 +146,8 @@ void PwmGeneration::Run()
 
 void PwmGeneration::SetTorquePercent(float torque)
 {
-   PwmGeneration::torqueRequest = FP_FROMFLT(torque);
+   int torquefilter = Param::GetInt(Param::torquefilter);
+   torqueRequest = IIRFILTER(torqueRequest, FP_FROMFLT(torque), torquefilter);
 }
 
 void PwmGeneration::PwmInit()

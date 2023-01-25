@@ -47,7 +47,7 @@
     PARAM_ENTRY(CAT_MOTOR,   mfslipmin,   "Hz",      0,      20,     3,      34  ) \
     PARAM_ENTRY(CAT_MOTOR,   rfslipmax,   "Hz",      0.3,    20,     3,      35  ) \
     PARAM_ENTRY(CAT_MOTOR,   rfslipmin,   "Hz",      0,      20,     3,      36  ) \
-    PARAM_ENTRY(CAT_MOTOR,   ampslew   ,  "dig/cyc", 0,      200000, 10000,  37  ) \
+    PARAM_ENTRY(CAT_MOTOR,   torquefilter,"",        0,      10,     3,      37  ) \
 
 #define MOTOR_PARAMETERS_FOC \
     PARAM_ENTRY(CAT_MOTOR,   curki,       "",        0,      100000, 20000,  108 ) \
