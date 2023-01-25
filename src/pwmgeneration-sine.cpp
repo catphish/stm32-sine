@@ -54,6 +54,10 @@ void PwmGeneration::Run()
       // If torque is less than zero, we are in regen mode
       int regen = torqueRequest < 0;
 
+      // Disable regen if we are not travelling in the requested direction
+      if (regen && Encoder::GetRotorDirection() != Param::GetInt(Param::dir))
+         torqueRequest = 0;
+
       s32fp fslipmax;
       s32fp fslipmin;
       s32fp throtcur;
