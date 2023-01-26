@@ -24,7 +24,7 @@
    2. Temporary parameters (id = 0)
    3. Display values
  */
-//Next param id (increase when adding new parameter!): 146
+//Next param id (increase when adding new parameter!): 145
 //Next value Id: 2053
 /*              category     name         unit       min     max     default id */
 
@@ -39,15 +39,11 @@
     PARAM_ENTRY(CAT_MOTOR,   dirmode,     DIRMODES,  0,      4,      1,      95  ) \
     PARAM_ENTRY(CAT_MOTOR,   throtcur,    "A/%",     0,      20,     1,      105 ) \
     PARAM_ENTRY(CAT_MOTOR,   snsm,        SNS_M,     12,     23,     12,     46  ) \
-    PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      20000,  32,     107 ) \
+    PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      20000,  2,      107 ) \
 
 #define MOTOR_PARAMETERS_SINE \
-    PARAM_ENTRY(CAT_MOTOR,   rthrotcur,   "A/%",     0,      20,     1,      106 ) \
-    PARAM_ENTRY(CAT_MOTOR,   mfslipmax,   "Hz",      0.3,    20,     3,      33  ) \
-    PARAM_ENTRY(CAT_MOTOR,   mfslipmin,   "Hz",      0,      20,     3,      34  ) \
-    PARAM_ENTRY(CAT_MOTOR,   rfslipmax,   "Hz",      0.3,    20,     3,      35  ) \
-    PARAM_ENTRY(CAT_MOTOR,   rfslipmin,   "Hz",      0,      20,     3,      36  ) \
-    PARAM_ENTRY(CAT_MOTOR,   torquefilter,"",        0,      10,     3,      37  ) \
+    PARAM_ENTRY(CAT_MOTOR,   fslipmax,   "Hz",       0.3,    20,     3,      33  ) \
+    PARAM_ENTRY(CAT_MOTOR,   fslipmin,   "Hz",       0,      20,     0,      34  ) \
 
 #define MOTOR_PARAMETERS_FOC \
     PARAM_ENTRY(CAT_MOTOR,   curki,       "",        0,      100000, 20000,  108 ) \

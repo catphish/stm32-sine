@@ -47,30 +47,10 @@ void PwmGeneration::Run()
       // Get requested direction from DNR switch
       int dir = Param::GetInt(Param::dir);
 
-      // If torque is less than zero, we are in regen mode
-      int regen = torqueRequest < 0;
-
-      // Disable regen if we are not travelling in the requested direction
-      if (regen && Encoder::GetRotorDirection() != Param::GetInt(Param::dir))
-         torqueRequest = 0;
-
-      s32fp fslipmax;
-      s32fp fslipmin;
-      s32fp throtcur;
-      // If regen is requested, use "r" parameters
-      if (regen)
-      {
-         fslipmax = -Param::Get(Param::rfslipmax);
-         fslipmin = -Param::Get(Param::rfslipmin);
-         throtcur = Param::Get(Param::rthrotcur);
-      }
-      // If torque is positive use "m" parameters
-      else
-      {
-         fslipmax = Param::Get(Param::mfslipmax);
-         fslipmin = Param::Get(Param::mfslipmin);
-         throtcur = Param::Get(Param::throtcur);
-      }
+      // Fetch settings
+      s32fp fslipmax = Param::Get(Param::fslipmax);
+      s32fp fslipmin = Param::Get(Param::fslipmin);
+      s32fp throtcur = Param::Get(Param::throtcur);
 
       // Set ampnom to magnitude of torque request
       ampnom = ABS(torqueRequest);
@@ -89,9 +69,10 @@ void PwmGeneration::Run()
       Encoder::UpdateRotorAngle(dir);
       CalcNextAngleAsync();
 
-      // Adjust amplitude according to requested and measured current
+      // Fetch current correction gain
       s32fp curkp = Param::Get(Param::curkp);
 
+      // Calculate target current
       s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
 
@@ -118,7 +99,7 @@ void PwmGeneration::Run()
       Param::SetFixed(Param::angle, DIGIT_TO_DEGREE(angle));
       SineCore::Calc(angle);
 
-      /* Shut down PWM if neutral is selected */
+      /* Shut down PWM if amplitude or direction are zero */
       if (0 == amp || 0 == dir)
       {
          timer_disable_break_main_output(PWM_TIMER);
@@ -146,8 +127,8 @@ void PwmGeneration::Run()
 
 void PwmGeneration::SetTorquePercent(float torque)
 {
-   int torquefilter = Param::GetInt(Param::torquefilter);
-   torqueRequest = IIRFILTER(torqueRequest, FP_FROMFLT(torque), torquefilter);
+   // Set torque request, positive only
+   torqueRequest = MAX(FP_FROMFLT(torque), 0);
 }
 
 void PwmGeneration::PwmInit()
