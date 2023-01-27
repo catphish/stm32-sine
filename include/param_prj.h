@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define VER 5.25.R
+#define VER 5.25.Y
 
 /* Entries must be ordered as follows:
    1. Saveable parameters (id != 0)
@@ -44,6 +44,7 @@
 #define MOTOR_PARAMETERS_SINE \
     PARAM_ENTRY(CAT_MOTOR,   fslipmax,   "Hz",       0.3,    20,     3,      33  ) \
     PARAM_ENTRY(CAT_MOTOR,   fslipmin,   "Hz",       0,      20,     0,      34  ) \
+    PARAM_ENTRY(CAT_MOTOR,   imag,       "A",        0,      1000,   0,      35  ) \
 
 #define MOTOR_PARAMETERS_FOC \
     PARAM_ENTRY(CAT_MOTOR,   curki,       "",        0,      100000, 20000,  108 ) \

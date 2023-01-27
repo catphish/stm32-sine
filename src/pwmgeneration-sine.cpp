@@ -71,14 +71,18 @@ void PwmGeneration::Run()
 
       // Fetch current correction gain
       s32fp curkp = Param::Get(Param::curkp);
+      // Fetch magnetizing (D) current
+      s32fp imag = Param::Get(Param::imag);
 
       // Calculate target current
-      s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
+      s32fp ilmaxtarget = imag + FP_MUL(throtcur, ampnom);
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
 
-      // Calculate DC current
+      // Multiply AC current by DC voltage fraction to get DC current
       s32fp idc = ilmax * SineCore::GetAmp() / SineCore::MAXAMP;
-      idc = FP_MUL(idc, FP_FROMFLT(1.2247)); // Multiply by sqrt(3), divide by sqrt(2)
+      // Divide by sqrt(2) to convert to RMS
+      // Multiply by sqrt(3) to convert to single phase
+      idc = FP_MUL(idc, FP_FROMFLT(1.2247));
       Param::SetFixed(Param::idc, idc);
 
       // Apply a correction to the amplitude
