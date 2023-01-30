@@ -36,6 +36,31 @@
 #define DIGIT_TO_DEGREE(a) FP_FROMINT(angle) / (65536 / 360)
 #define INV_SQRT_1_5 FP_FROMFLT(0.8164965809)
 
+u32fp fp_hypot2(s32fp a, s32fp b)
+{
+  int n = 0;
+  while(a > 16384 || b > 16384) {
+    n++;
+    a /= 2;
+    b /= 2;
+  }
+  u32fp result = fp_sqrt(FP_MUL(a,a) + FP_MUL(b,b));
+  return result << n;
+}
+
+u32fp fp_hypot3(s32fp a, s32fp b, s32fp c)
+{
+  int n = 0;
+  while(a > 16384 || b > 16384 || c > 16384) {
+    n++;
+    a /= 2;
+    b /= 2;
+    c /= 2;
+  }
+  u32fp result = fp_sqrt(FP_MUL(a,a) + FP_MUL(b,b) + FP_MUL(c,c));
+  return result << n;
+}
+
 void PwmGeneration::Run()
 {
    if (opmode == MOD_RUN)
@@ -75,7 +100,7 @@ void PwmGeneration::Run()
       s32fp imag = Param::Get(Param::imag);
 
       // Calculate target current
-      s32fp ilmaxtarget = imag + FP_MUL(throtcur, ampnom);
+      s32fp ilmaxtarget = fp_hypot2(imag, FP_MUL(throtcur, ampnom));
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
 
       // Multiply AC current by DC voltage fraction to get DC current
@@ -150,8 +175,7 @@ void PwmGeneration::PwmInit()
 s32fp PwmGeneration::GetIlMax(s32fp il1, s32fp il2)
 {
    s32fp il3 = -il1 - il2;
-   s32fp ilMax = FP_MUL(il1, il1) + FP_MUL(il2, il2) + FP_MUL(il3, il3);
-   ilMax = fp_sqrt(ilMax);
+   s32fp ilMax = fp_hypot3(il1, il2, il3);
    ilMax = FP_MUL(ilMax, INV_SQRT_1_5);
 
    return ilMax;
