@@ -39,7 +39,7 @@
 u32fp fp_hypot2(s32fp a, s32fp b)
 {
   int n = 0;
-  while(a > 16384 || b > 16384) {
+  while(a > 16384 || b > 16384 || a < -16384 || b < -16384) {
     n++;
     a /= 2;
     b /= 2;
@@ -51,7 +51,7 @@ u32fp fp_hypot2(s32fp a, s32fp b)
 u32fp fp_hypot3(s32fp a, s32fp b, s32fp c)
 {
   int n = 0;
-  while(a > 16384 || b > 16384 || c > 16384) {
+  while(a > 16384 || b > 16384 || c > 16384 || a < -16384 || b < -16384 || c < -16384) {
     n++;
     a /= 2;
     b /= 2;
