@@ -103,13 +103,6 @@ void PwmGeneration::Run()
       s32fp ilmaxtarget = fp_hypot2(imag, FP_MUL(throtcur, ampnom));
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
 
-      // Multiply AC current by DC voltage fraction to get DC current
-      s32fp idc = ilmax * SineCore::GetAmp() / SineCore::MAXAMP;
-      // Divide by sqrt(2) to convert to RMS
-      // Multiply by sqrt(3) to convert to single phase
-      idc = FP_MUL(idc, FP_FROMFLT(1.2247));
-      Param::SetFixed(Param::idc, idc);
-
       // Apply a correction to the amplitude
       s32fp ierror = ilmaxtarget - ilmax;
       s32fp correction = FP_MUL(ierror, curkp);
@@ -191,6 +184,13 @@ s32fp PwmGeneration::ProcessCurrents()
    Param::SetFixed(Param::il1, il1);
    Param::SetFixed(Param::il2, il2);
    Param::SetFixed(Param::ilmax, ilMax);
+
+   // Multiply AC current by DC voltage fraction to get DC current
+   s32fp idc = ilMax * SineCore::GetAmp() / SineCore::MAXAMP;
+   // Divide by sqrt(2) to convert to RMS
+   // Multiply by sqrt(3) to convert to single phase
+   idc = FP_MUL(idc, FP_FROMFLT(1.2247));
+   Param::SetFixed(Param::idc, idc);
 
    return ilMax;
 }
