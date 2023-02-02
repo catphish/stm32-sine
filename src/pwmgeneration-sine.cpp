@@ -96,11 +96,9 @@ void PwmGeneration::Run()
 
       // Fetch current correction gain
       s32fp curkp = Param::Get(Param::curkp);
-      // Fetch magnetizing (D) current
-      s32fp imag = Param::Get(Param::imag);
 
       // Calculate target current
-      s32fp ilmaxtarget = fp_hypot2(imag, FP_MUL(throtcur, ampnom));
+      s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
 
       // Apply a correction to the amplitude
