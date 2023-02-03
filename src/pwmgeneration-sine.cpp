@@ -86,6 +86,15 @@ void PwmGeneration::Run()
 
       // Calculate target current
       s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
+
+      // Calculate alternative current limit based on DC current
+      // Ignore if voltage is near zero
+      if(SineCore::GetAmp() > 64)
+      {
+         s32fp ilmaxtargetdc = Param::GetInt(Param::idcmax) * SineCore::MAXAMP / SineCore::GetAmp() * 32;
+         if (ilmaxtargetdc < ilmaxtarget) ilmaxtarget = ilmaxtargetdc;
+      }
+
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
 
       // Apply a correction to the amplitude
@@ -101,7 +110,7 @@ void PwmGeneration::Run()
          amp = 0;
 
       // Calculate maximum field weakening
-      s32fp fweakmax = ((fslipweak - fslipmax) << 4) | 0xF;
+      s32fp fweakmax = ((fslipweak - fslipmax) << 6) | 0x3F;
       if (fweakmax < 0) fweakmax = 0;
 
       // If voltage is too low, increase field weakening, else reduce it
@@ -115,7 +124,7 @@ void PwmGeneration::Run()
       }
 
       // Set slip according to torque request and fslipmax
-      fslipmax += fweak >> 4;
+      fslipmax += fweak >> 6;
       fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
 
       // Set parameters for logging

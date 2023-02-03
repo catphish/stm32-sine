@@ -182,8 +182,10 @@ float VehicleControl::ProcessThrottle()
       Throttle::BmsLimitCommand(finalSpnt, Param::GetBool(Param::din_bms));
 
    Throttle::UdcLimitCommand(finalSpnt, Param::GetFloat(Param::udc));
-   Throttle::IdcLimitCommand(finalSpnt, Param::GetFloat(Param::idc));
    Throttle::FrequencyLimitCommand(finalSpnt, Param::GetFloat(Param::fstat));
+#if CONTROL == CTRL_FOC
+   Throttle::IdcLimitCommand(finalSpnt, Param::GetFloat(Param::idc));
+#endif
 
    if (Throttle::TemperatureDerate(Param::GetFloat(Param::tmphs), Param::GetFloat(Param::tmphsmax), finalSpnt))
    {
