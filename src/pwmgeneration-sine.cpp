@@ -73,26 +73,13 @@ void PwmGeneration::Run()
       int dir = Param::GetInt(Param::dir);
 
       // Fetch settings
-      s32fp fslipmax = Param::Get(Param::fslipmax);
-      s32fp fslipmin = Param::Get(Param::fslipmin);
-      s32fp throtcur = Param::Get(Param::throtcur);
+      s32fp fslipweak = Param::Get(Param::fslipweak);
+      s32fp fslipmax  = Param::Get(Param::fslipmax);
+      s32fp fslipmin  = Param::Get(Param::fslipmin);
+      s32fp throtcur  = Param::Get(Param::throtcur);
 
       // Set ampnom to magnitude of torque request
       ampnom = ABS(torqueRequest);
-
-      // Set slip according to torque request and fslipmax
-      fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
-
-      // Set parameters for logging
-      Param::SetFixed(Param::ampnom, ampnom);
-      Param::SetFixed(Param::fslipspnt, fslip);
-
-      // Set slip increment angle
-      slipIncr = FRQ_TO_ANGLE(fslip * dir);
-
-      // Calculate current angle
-      Encoder::UpdateRotorAngle(dir);
-      CalcNextAngleAsync();
 
       // Fetch current correction gain
       s32fp curkp = Param::Get(Param::curkp);
@@ -107,11 +94,40 @@ void PwmGeneration::Run()
       amp += correction;
 
       // Limit amplitude to 0..MAXAMP, shift by 9 bits to get more resolution
-      int32_t maxamp = ((SineCore::MAXAMP << 9) | 0x1FF);
+      int32_t maxamp = (SineCore::MAXAMP << 9) | 0x1FF;
       if (amp > maxamp)
          amp = maxamp;
       else if (amp < 0)
          amp = 0;
+
+      // Calculate maximum field weakening
+      s32fp fweakmax = ((fslipweak - fslipmax) << 4) | 0xF;
+      if (fweakmax < 0) fweakmax = 0;
+
+      // If voltage is too low, increase field weakening, else reduce it
+      if (amp == maxamp && correction > 0)
+      {
+         fweak = MIN(fweak + 1, fweakmax);
+      }
+      else if (fweak > 0)
+      {
+         fweak -= 1;
+      }
+
+      // Set slip according to torque request and fslipmax
+      fslipmax += fweak >> 4;
+      fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
+
+      // Set parameters for logging
+      Param::SetFixed(Param::ampnom, ampnom);
+      Param::SetFixed(Param::fslipspnt, fslip);
+
+      // Set slip increment angle
+      slipIncr = FRQ_TO_ANGLE(fslip * dir);
+
+      // Calculate current angle
+      Encoder::UpdateRotorAngle(dir);
+      CalcNextAngleAsync();
 
       SineCore::SetAmp(amp >> 9);
       Param::SetInt(Param::amp, amp >> 9);

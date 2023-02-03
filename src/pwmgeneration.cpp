@@ -49,6 +49,7 @@ int      PwmGeneration::polePairRatio;
 int16_t  PwmGeneration::slipIncr;
 s32fp    PwmGeneration::torqueRequest;
 int32_t  PwmGeneration::amp;
+s32fp    PwmGeneration::fweak;
 
 static int      execTicks;
 static bool     tripped;
