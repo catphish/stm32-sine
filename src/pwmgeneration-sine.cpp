@@ -210,9 +210,12 @@ s32fp PwmGeneration::ProcessCurrents()
 
    // Multiply AC current by DC voltage fraction to get DC current
    s32fp idc = ilMax * SineCore::GetAmp() / SineCore::MAXAMP;
-   // Divide by sqrt(2) to convert to RMS
-   // Multiply by sqrt(3) to convert to single phase
-   idc = FP_MUL(idc, FP_FROMFLT(1.2247));
+   // In theory we should divide by sqrt(2) to convert to RMS
+   // and then multiply by sqrt(3) to convert to single phase
+   // We can just multiply by 1.2247 to get the same result
+   // but I'm not going to bother because the result is not
+   // scaled correctly anyway.
+   // idc = FP_MUL(idc, FP_FROMFLT(1.2247));
    Param::SetFixed(Param::idc, idc);
 
    return ilMax;
