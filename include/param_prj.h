@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define VER 5.25.Y
+#define VER 5.26.Z
 
 /* Entries must be ordered as follows:
    1. Saveable parameters (id != 0)
