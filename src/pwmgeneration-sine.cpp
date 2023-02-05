@@ -110,7 +110,7 @@ void PwmGeneration::Run()
          amp = 0;
 
       // Calculate maximum field weakening
-      s32fp fweakmax = ((fslipweak - fslipmax) << 6) | 0x3F;
+      s32fp fweakmax = ((fslipweak - fslipmax) << 8) | 0xFF;
       if (fweakmax < 0) fweakmax = 0;
 
       // If voltage is too low, increase field weakening, else reduce it
@@ -124,7 +124,7 @@ void PwmGeneration::Run()
       }
 
       // Set slip according to torque request and fslipmax
-      fslipmax += fweak >> 6;
+      fslipmax += fweak >> 8;
       fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
 
       // Set parameters for logging
