@@ -36,31 +36,6 @@
 #define DIGIT_TO_DEGREE(a) FP_FROMINT(angle) / (65536 / 360)
 #define INV_SQRT_1_5 FP_FROMFLT(0.8164965809)
 
-u32fp fp_hypot2(s32fp a, s32fp b)
-{
-  int n = 0;
-  while(a > 16384 || b > 16384 || a < -16384 || b < -16384) {
-    n++;
-    a /= 2;
-    b /= 2;
-  }
-  u32fp result = fp_sqrt(FP_MUL(a,a) + FP_MUL(b,b));
-  return result << n;
-}
-
-u32fp fp_hypot3(s32fp a, s32fp b, s32fp c)
-{
-  int n = 0;
-  while(a > 16384 || b > 16384 || c > 16384 || a < -16384 || b < -16384 || c < -16384) {
-    n++;
-    a /= 2;
-    b /= 2;
-    c /= 2;
-  }
-  u32fp result = fp_sqrt(FP_MUL(a,a) + FP_MUL(b,b) + FP_MUL(c,c));
-  return result << n;
-}
-
 void PwmGeneration::Run()
 {
    if (opmode == MOD_RUN)
