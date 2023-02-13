@@ -236,7 +236,7 @@ void PwmGeneration::CalcNextAngleSync()
       uint16_t rotorAngle = Encoder::GetRotorAngle();
 
       angle = polePairRatio * rotorAngle + syncOfs;
-      frq = polePairRatio * Encoder::GetRotorFrequency();
+      frq = polePairRatio * ABS(Encoder::GetRotorFrequency());
    }
    else
    {

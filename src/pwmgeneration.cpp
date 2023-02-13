@@ -273,19 +273,6 @@ void PwmGeneration::SetChargeCurrent(float cur)
 
 /*----- Private methods ----------------------------------------- */
 
-void PwmGeneration::CalcNextAngleAsync()
-{
-   static uint16_t slipAngle = 0;
-   uint16_t rotorAngle = Encoder::GetRotorAngle();
-
-   frq = polePairRatio * Encoder::GetRotorFrequency() + fslip;
-   slipAngle += slipIncr;
-
-   if (frq < 0) frq = 0;
-
-   angle = polePairRatio * rotorAngle + slipAngle;
-}
-
 void PwmGeneration::Charge()
 {
    static s32fp iFlt;
@@ -340,6 +327,7 @@ s32fp PwmGeneration::GetCurrent(AnaIn& input, s32fp offset, s32fp gain)
 {
    s32fp il = FP_FROMINT(input.Get());
    il -= offset;
+   il -= 305;
    return FP_DIV(il, gain);
 }
 

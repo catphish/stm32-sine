@@ -29,6 +29,7 @@
 #include "anain.h"
 #include "my_math.h"
 #include "picontroller.h"
+#include "foc.h"
 
 #define SHIFT_180DEG (uint16_t)32768
 #define SHIFT_90DEG  (uint16_t)16384
@@ -40,100 +41,93 @@ void PwmGeneration::Run()
 {
    if (opmode == MOD_RUN)
    {
-      // Process currents and get ilmax
-      ProcessCurrents();
-      s32fp ilmax = Param::Get(Param::ilmax);
-
-      // Get requested direction from DNR switch
-      int dir = Param::GetInt(Param::dir);
-
       // Fetch settings
-      s32fp fslipweak = Param::Get(Param::fslipweak);
-      s32fp fslipmax  = Param::Get(Param::fslipmax);
-      s32fp fslipmin  = Param::Get(Param::fslipmin);
+      int dir = Param::GetInt(Param::dir);
       s32fp throtcur  = Param::Get(Param::throtcur);
-
-      // Set ampnom to magnitude of torque request
-      ampnom = ABS(torqueRequest);
-
-      // Fetch current correction gain
       s32fp curkp = Param::Get(Param::curkp);
+      s32fp slipconst = Param::GetInt(Param::slipconst);
 
-      // Calculate target current
-      s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
+      // Update rotor angle from encoder
+      Encoder::UpdateRotorAngle(dir);
 
-      // Calculate alternative current limit based on DC current
-      // Ignore if voltage is near zero
-      if(SineCore::GetAmp() > 64)
+      // Process currents
+      s32fp il2 = GetCurrent(AnaIn::il1, ilofs[0], Param::Get(Param::il1gain));
+      s32fp il3 = GetCurrent(AnaIn::il2, ilofs[1], Param::Get(Param::il2gain));
+      s32fp il1 = -il2 - il3;
+      s32fp ilMax = GetIlMax(il1, il2);
+      Param::SetFixed(Param::il1, il1);
+      Param::SetFixed(Param::il2, il2);
+      Param::SetFixed(Param::ilmax, ilMax);
+
+      // Calculate measured IQ and ID
+      FOC::SetAngle(angle);
+      FOC::ParkClarke(il1, il2);
+      Param::SetFixed(Param::iq, FOC::iq);
+      Param::SetFixed(Param::id, FOC::id);
+
+      // Calculate target IQ and ID
+      s32fp idtarget = Param::Get(Param::idtarget);
+      s32fp iqtarget = FP_MUL(throtcur, torqueRequest) * dir;
+
+      // Increment rotor field angle
+      int32_t slipIncr = 0;
+      if(idtarget > 0)
       {
-         s32fp ilmaxtargetdc = Param::GetInt(Param::idcmax) * SineCore::MAXAMP / SineCore::GetAmp() * 32;
-         if (ilmaxtargetdc < ilmaxtarget) ilmaxtarget = ilmaxtargetdc;
+         slipIncr = iqtarget;
+         slipIncr <<= 12;
+         slipIncr /= slipconst;
+         slipIncr <<= 12;
+         slipIncr /= idtarget;
       }
-
-      Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
-
-      // Apply a correction to the amplitude
-      s32fp ierror = ilmaxtarget - ilmax;
-      s32fp correction = FP_MUL(ierror, curkp);
-      amp += correction;
-
-      // Limit amplitude to 0..MAXAMP, shift by 9 bits to get more resolution
-      int32_t maxamp = (SineCore::MAXAMP << 9) | 0x1FF;
-      if (amp > maxamp)
-         amp = maxamp;
-      else if (amp < 0)
-         amp = 0;
-
-      // Calculate maximum field weakening
-      s32fp fweakmax = ((fslipweak - fslipmax) << 8) | 0xFF;
-      if (fweakmax < 0) fweakmax = 0;
-
-      // If voltage is too low, increase field weakening, else reduce it
-      if (amp == maxamp && correction > 0)
-      {
-         fweak = MIN(fweak + 1, fweakmax);
-      }
-      else if (fweak > 0)
-      {
-         fweak -= 1;
-      }
-
-      // Set slip according to torque request and fslipmax
-      fslipmax += fweak >> 8;
-      fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
-
-      // Set parameters for logging
-      Param::SetFixed(Param::ampnom, ampnom);
+      static uint32_t slipAngle = 0;
+      slipAngle += slipIncr;
+      slipAngle &= 0xFFFFFF;
+      uint16_t rotorAngle = Encoder::GetRotorAngle();
+      angle = -polePairRatio * rotorAngle + (slipAngle >> 8);
       Param::SetFixed(Param::fslipspnt, fslip);
 
-      // Set slip increment angle
-      slipIncr = FRQ_TO_ANGLE(fslip * dir);
+      // Caculate slip frequency in Hz
+      fslip = (slipIncr * pwmfrq) >> 19;
+      Param::SetFixed(Param::fslipspnt, fslip);
 
-      // Calculate current angle
-      Encoder::UpdateRotorAngle(dir);
-      CalcNextAngleAsync();
-
-      SineCore::SetAmp(amp >> 9);
-      Param::SetInt(Param::amp, amp >> 9);
+      // Calculate rotor frequency in Hz
+      frq = ABS(polePairRatio * Encoder::GetRotorFrequency() + fslip);
       Param::SetFixed(Param::fstat, frq);
-      Param::SetFixed(Param::angle, DIGIT_TO_DEGREE(angle));
-      SineCore::Calc(angle);
 
-      /* Shut down PWM if amplitude or direction are zero */
-      if (0 == amp || 0 == dir)
-      {
-         timer_disable_break_main_output(PWM_TIMER);
-         amp = 0;
-      }
-      else
+      // Apply corrections to IQ and ID voltages
+      static int32_t ud = 0;
+      int32_t dError = idtarget - FOC::id;
+      ud += FP_MUL(curkp, dError)/1000;
+      if(ud > 26737) ud = 26737;
+      if(ud < -26737) ud = -26737;
+      static int32_t uq = 0;
+      int32_t qError = iqtarget - FOC::iq;
+      uq += FP_MUL(curkp, qError)/1000;
+      if(uq > 26737) uq = 26737;
+      if(uq < -26737) uq = -26737;
+      Param::SetFixed(Param::ud, ud);
+      Param::SetFixed(Param::uq, uq);
+
+      // Inverse Park Clarke
+      FOC::SetAngle(angle);
+      FOC::InvParkClarke(ud, uq);
+
+      /* Match to PWM resolution */
+      timer_set_oc_value(PWM_TIMER, TIM_OC1, FOC::DutyCycles[0] >> shiftForTimer);
+      timer_set_oc_value(PWM_TIMER, TIM_OC2, FOC::DutyCycles[1] >> shiftForTimer);
+      timer_set_oc_value(PWM_TIMER, TIM_OC3, FOC::DutyCycles[2] >> shiftForTimer);
+
+      /* Shut down PWM if direction is zero */
+      if (dir)
       {
          timer_enable_break_main_output(PWM_TIMER);
       }
-
-      /* Match to PWM resolution */
-      timer_set_oc_value(PWM_TIMER, TIM_OC1, SineCore::DutyCycles[0] >> shiftForTimer);
-      timer_set_oc_value(PWM_TIMER, TIM_OC2, SineCore::DutyCycles[1] >> shiftForTimer);
-      timer_set_oc_value(PWM_TIMER, TIM_OC3, SineCore::DutyCycles[2] >> shiftForTimer);
+      else
+      {
+         timer_disable_break_main_output(PWM_TIMER);
+         ud = 0;
+         uq = 0;
+      }
    }
    else if (opmode == MOD_BOOST || opmode == MOD_BUCK)
    {
@@ -168,30 +162,6 @@ s32fp PwmGeneration::GetIlMax(s32fp il1, s32fp il2)
    s32fp il3 = -il1 - il2;
    s32fp ilMax = fp_hypot3(il1, il2, il3);
    ilMax = FP_MUL(ilMax, INV_SQRT_1_5);
-
-   return ilMax;
-}
-
-s32fp PwmGeneration::ProcessCurrents()
-{
-   s32fp il1 = GetCurrent(AnaIn::il1, ilofs[0], Param::Get(Param::il1gain));
-   s32fp il2 = GetCurrent(AnaIn::il2, ilofs[1], Param::Get(Param::il2gain));
-
-   s32fp ilMax = GetIlMax(il1, il2);
-
-   Param::SetFixed(Param::il1, il1);
-   Param::SetFixed(Param::il2, il2);
-   Param::SetFixed(Param::ilmax, ilMax);
-
-   // Multiply AC current by DC voltage fraction to get DC current
-   s32fp idc = ilMax * SineCore::GetAmp() / SineCore::MAXAMP;
-   // In theory we should divide by sqrt(2) to convert to RMS
-   // and then multiply by sqrt(3) to convert to single phase
-   // We can just multiply by 1.2247 to get the same result
-   // but I'm not going to bother because the result is not
-   // scaled correctly anyway.
-   // idc = FP_MUL(idc, FP_FROMFLT(1.2247));
-   Param::SetFixed(Param::idc, idc);
 
    return ilMax;
 }

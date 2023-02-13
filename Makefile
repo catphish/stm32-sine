@@ -43,13 +43,13 @@ LDFLAGS  = -Llibopencm3/lib -T$(LDSCRIPT) -march=armv7 -nostartfiles -Wl,--gc-se
 OBJSL		= stm32_sine.o hwinit.o stm32scheduler.o params.o terminal.o terminal_prj.o \
            my_string.o digio.o sine_core.o my_fp.o fu.o inc_encoder.o printf.o anain.o \
            temp_meas.o param_save.o throttle.o errormessage.o stm32_can.o pwmgeneration.o \
-           picontroller.o terminalcommands.o vehiclecontrol.o
+           picontroller.o terminalcommands.o vehiclecontrol.o foc.o
 
 ifeq ($(CONTROL), SINE)
 	OBJSL += pwmgeneration-sine.o
 endif
 ifeq ($(CONTROL), FOC)
-	OBJSL += pwmgeneration-foc.o foc.o
+	OBJSL += pwmgeneration-foc.o
 endif
 
 OBJS     = $(patsubst %.o,obj/%.o, $(OBJSL))

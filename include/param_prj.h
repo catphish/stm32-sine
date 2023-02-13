@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define VER 5.26.Y
+#define VER 5.26.F1
 
 /* Entries must be ordered as follows:
    1. Saveable parameters (id != 0)
@@ -42,9 +42,8 @@
     PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      20000,  2,      107 ) \
 
 #define MOTOR_PARAMETERS_SINE \
-    PARAM_ENTRY(CAT_MOTOR,   fslipweak,  "Hz",       0,      20,     4,      36  ) \
-    PARAM_ENTRY(CAT_MOTOR,   fslipmax,   "Hz",       0,      20,     3,      33  ) \
-    PARAM_ENTRY(CAT_MOTOR,   fslipmin,   "Hz",       0,      20,     0,      34  ) \
+    PARAM_ENTRY(CAT_MOTOR,   idtarget,   "A",        0,      2000,   0,      36  ) \
+    PARAM_ENTRY(CAT_MOTOR,   slipconst,  "",         0,      100000, 8800,   1   ) \
 
 #define MOTOR_PARAMETERS_FOC \
     PARAM_ENTRY(CAT_MOTOR,   curki,       "",        0,      100000, 20000,  108 ) \
@@ -142,6 +141,10 @@
     VALUE_ENTRY(idc,         "A",     2002 ) \
     VALUE_ENTRY(il1,         "A",     2003 ) \
     VALUE_ENTRY(il2,         "A",     2004 ) \
+    VALUE_ENTRY(id,          "A",     2007 ) \
+    VALUE_ENTRY(iq,          "A",     2008 ) \
+    VALUE_ENTRY(ud,          "dig",   2046 ) \
+    VALUE_ENTRY(uq,          "dig",   2047 ) \
 
 #define VALUE_BLOCK2 \
     VALUE_ENTRY(fstat,       "Hz",    2011 ) \
@@ -180,11 +183,7 @@
     VALUE_ENTRY(ilmaxtarget, "A",     2051 ) \
 
 #define VALUES_FOC \
-    VALUE_ENTRY(id,      "A",     2003 ) \
-    VALUE_ENTRY(iq,      "A",     2004 ) \
     VALUE_ENTRY(ifw,     "A",     2048 ) \
-    VALUE_ENTRY(ud,      "dig",   2046 ) \
-    VALUE_ENTRY(uq,      "dig",   2047 ) \
 
 #if CONTROL == CTRL_SINE
 #define PARAM_LIST \
