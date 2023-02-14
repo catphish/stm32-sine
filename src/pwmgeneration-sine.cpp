@@ -53,6 +53,19 @@ void PwmGeneration::Run()
       s32fp fslipmin  = Param::Get(Param::fslipmin);
       s32fp throtcur  = Param::Get(Param::throtcur);
       s32fp imag      = Param::Get(Param::imag);
+      // Regen settings
+      s32fp rslipmin  = Param::Get(Param::rslipmin);
+      s32fp rslipmax  = Param::Get(Param::rslipmax);
+      s32fp rcurrent  = Param::Get(Param::rcurrent);
+
+      // Apply regen settings is torque request is negative
+      if (torqueRequest < 0)
+      {
+         fslipmin  = rslipmin;
+         fslipmax  = rslipmax;
+         fslipweak = rslipmax;
+         throtcur  = rcurrent;
+      }
 
       // Set ampnom to magnitude of torque request
       ampnom = ABS(torqueRequest);
@@ -103,6 +116,9 @@ void PwmGeneration::Run()
       fslipmax += fweak >> 8;
       fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
 
+      // Invert slip if torque request is negative
+      if (torqueRequest < 0) fslip = -fslip;
+
       // Set parameters for logging
       Param::SetFixed(Param::ampnom, ampnom);
       Param::SetFixed(Param::fslipspnt, fslip);
@@ -149,7 +165,7 @@ void PwmGeneration::Run()
 void PwmGeneration::SetTorquePercent(float torque)
 {
    // Set torque request, positive only
-   torqueRequest = MAX(FP_FROMFLT(torque), 0);
+   torqueRequest = FP_FROMFLT(torque);
 }
 
 void PwmGeneration::PwmInit()
