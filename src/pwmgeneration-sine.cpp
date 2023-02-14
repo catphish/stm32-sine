@@ -47,6 +47,10 @@ void PwmGeneration::Run()
       s32fp curkp = Param::Get(Param::curkp);
       s32fp slipconst = Param::GetInt(Param::slipconst);
 
+      // Calculate target IQ and ID
+      s32fp idtarget = Param::Get(Param::idtarget);
+      s32fp iqtarget = FP_MUL(throtcur, torqueRequest) * dir;
+
       // Update rotor angle from encoder
       Encoder::UpdateRotorAngle(dir);
 
@@ -64,10 +68,6 @@ void PwmGeneration::Run()
       FOC::ParkClarke(il1, il2);
       Param::SetFixed(Param::iq, FOC::iq);
       Param::SetFixed(Param::id, FOC::id);
-
-      // Calculate target IQ and ID
-      s32fp idtarget = Param::Get(Param::idtarget);
-      s32fp iqtarget = FP_MUL(throtcur, torqueRequest) * dir;
 
       // Increment rotor field angle
       int32_t slipIncr = 0;
@@ -142,7 +142,7 @@ void PwmGeneration::Run()
 void PwmGeneration::SetTorquePercent(float torque)
 {
    // Set torque request, positive only
-   torqueRequest = MAX(FP_FROMFLT(torque), 0);
+   torqueRequest =FP_FROMFLT(torque);
 }
 
 void PwmGeneration::PwmInit()
