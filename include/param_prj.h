@@ -45,7 +45,6 @@
     PARAM_ENTRY(CAT_MOTOR,   fslipweak,  "Hz",       0,      20,     4,      36  ) \
     PARAM_ENTRY(CAT_MOTOR,   fslipmax,   "Hz",       0,      20,     3,      33  ) \
     PARAM_ENTRY(CAT_MOTOR,   fslipmin,   "Hz",       0,      20,     0,      34  ) \
-    PARAM_ENTRY(CAT_MOTOR,   imag,       "A",        0,      1000,   0,      35  ) \
     PARAM_ENTRY(CAT_MOTOR,   rslipmax,   "Hz",       0,      20,     3,      59  ) \
     PARAM_ENTRY(CAT_MOTOR,   rslipmin,   "Hz",       0,      20,     0,      60  ) \
     PARAM_ENTRY(CAT_MOTOR,   rcurrent,   "A",        0,      1000,   0,      61  ) \

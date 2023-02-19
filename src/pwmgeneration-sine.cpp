@@ -52,7 +52,6 @@ void PwmGeneration::Run()
       s32fp fslipmax  = Param::Get(Param::fslipmax);
       s32fp fslipmin  = Param::Get(Param::fslipmin);
       s32fp throtcur  = Param::Get(Param::throtcur);
-      s32fp imag      = Param::Get(Param::imag);
       // Regen settings
       s32fp rslipmin  = Param::Get(Param::rslipmin);
       s32fp rslipmax  = Param::Get(Param::rslipmax);
@@ -74,7 +73,7 @@ void PwmGeneration::Run()
       s32fp curkp = Param::Get(Param::curkp);
 
       // Calculate target current
-      s32fp ilmaxtarget = fp_hypot2(imag, FP_MUL(throtcur, ampnom));
+      s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
 
       // Calculate alternative current limit based on DC current
       // Ignore if voltage is near zero
