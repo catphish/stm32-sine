@@ -56,6 +56,9 @@ void PwmGeneration::Run()
       s32fp rslipmin  = Param::Get(Param::rslipmin);
       s32fp rslipmax  = Param::Get(Param::rslipmax);
       s32fp rcurrent  = Param::Get(Param::rcurrent);
+      // Fetch current correction gain
+      s32fp curkp     = Param::Get(Param::curkp);
+      s32fp ncurkp    = Param::Get(Param::ncurkp);
 
       // Apply regen settings is torque request is negative
       if (torqueRequest < 0)
@@ -69,10 +72,6 @@ void PwmGeneration::Run()
       // Set ampnom to magnitude of torque request
       ampnom = ABS(torqueRequest);
 
-      // Fetch current correction gain
-      s32fp curkp  = Param::Get(Param::curkp);
-      s32fp ncurkp = Param::Get(Param::ncurkp);
-
       // Calculate target current
       s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
 
@@ -84,11 +83,14 @@ void PwmGeneration::Run()
          if (ilmaxtargetdc < ilmaxtarget) ilmaxtarget = ilmaxtargetdc;
       }
 
+      // Save current target for logging
       Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
 
-      // Apply a correction to the amplitude
+      // Calculate current error
       s32fp ierror = ilmaxtarget - ilmax;
+      // If error is negative, use negative current correction gain
       if (ierror < 0) curkp = ncurkp;
+      // Calculate and apply voltage correction
       s32fp correction = (ierror * curkp) / 4096;
       amp += correction;
 
@@ -105,13 +107,9 @@ void PwmGeneration::Run()
 
       // If voltage is too low, increase field weakening, else reduce it
       if (amp == maxamp && correction > 0)
-      {
          fweak = MIN(fweak + 1, fweakmax);
-      }
       else if (fweak > 0)
-      {
          fweak -= 1;
-      }
 
       // Set slip according to torque request and fslipmax
       fslipmax += fweak >> 8;
@@ -131,6 +129,7 @@ void PwmGeneration::Run()
       Encoder::UpdateRotorAngle(dir);
       CalcNextAngleAsync();
 
+      // Use SineCore module to calulate PWM duty cycles
       SineCore::SetAmp(amp >> 9);
       Param::SetInt(Param::amp, amp >> 9);
       Param::SetFixed(Param::fstat, frq);
