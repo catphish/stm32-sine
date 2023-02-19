@@ -39,7 +39,7 @@
     PARAM_ENTRY(CAT_MOTOR,   dirmode,     DIRMODES,  0,      4,      1,      95  ) \
     PARAM_ENTRY(CAT_MOTOR,   throtcur,    "A/%",     0,      20,     1,      105 ) \
     PARAM_ENTRY(CAT_MOTOR,   snsm,        SNS_M,     12,     23,     12,     46  ) \
-    PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      20000,  2,      107 ) \
+    PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      10000,  128,    107 ) \
 
 #define MOTOR_PARAMETERS_SINE \
     PARAM_ENTRY(CAT_MOTOR,   fslipweak,  "Hz",       0,      20,     4,      36  ) \
@@ -48,6 +48,7 @@
     PARAM_ENTRY(CAT_MOTOR,   rslipmax,   "Hz",       0,      20,     3,      59  ) \
     PARAM_ENTRY(CAT_MOTOR,   rslipmin,   "Hz",       0,      20,     0,      60  ) \
     PARAM_ENTRY(CAT_MOTOR,   rcurrent,   "A",        0,      1000,   0,      61  ) \
+    PARAM_ENTRY(CAT_MOTOR,   ncurkp,     "",         0,      10000,  128,    35  ) \
 
 #define MOTOR_PARAMETERS_FOC \
     PARAM_ENTRY(CAT_MOTOR,   curki,       "",        0,      100000, 20000,  108 ) \

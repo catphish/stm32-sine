@@ -70,7 +70,8 @@ void PwmGeneration::Run()
       ampnom = ABS(torqueRequest);
 
       // Fetch current correction gain
-      s32fp curkp = Param::Get(Param::curkp);
+      s32fp curkp  = Param::Get(Param::curkp);
+      s32fp ncurkp = Param::Get(Param::ncurkp);
 
       // Calculate target current
       s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
@@ -87,7 +88,8 @@ void PwmGeneration::Run()
 
       // Apply a correction to the amplitude
       s32fp ierror = ilmaxtarget - ilmax;
-      s32fp correction = FP_MUL(ierror, curkp);
+      if (ierror < 0) curkp = ncurkp;
+      s32fp correction = (ierror * curkp) / 4096;
       amp += correction;
 
       // Limit amplitude to 0..MAXAMP, shift by 9 bits to get more resolution
@@ -163,7 +165,10 @@ void PwmGeneration::Run()
 
 void PwmGeneration::SetTorquePercent(float torque)
 {
-   // Set torque request, positive only
+   // Don't allow regen to accelerate backwards
+   if (Encoder::GetRotorDirection() != Param::GetInt(Param::dir) && torque < 0)
+      torque = 0;
+   // Set torque request
    torqueRequest = FP_FROMFLT(torque);
 }
 
