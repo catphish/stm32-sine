@@ -275,15 +275,43 @@ void PwmGeneration::SetChargeCurrent(float cur)
 
 void PwmGeneration::CalcNextAngleAsync()
 {
-   static uint16_t slipAngle = 0;
-   uint16_t rotorAngle = Encoder::GetRotorAngle();
 
-   frq = polePairRatio * Encoder::GetRotorFrequency() + fslip;
+   // Track a filtered rotor angle
+   static uint16_t rotorAngleFiltered = 0;
+
+   // Calculate the rotor andgle delta
+   uint16_t rotorAngle = Encoder::GetRotorAngle();
+   static uint16_t previousAngle;
+   int16_t angleDiff = rotorAngle - previousAngle;
+   previousAngle = rotorAngle;
+
+   // Build a ring buffer to store the last 32 angle deltas
+   static int16_t angleDiffs[32];
+   static uint8_t angleDiffOffset;
+
+   // Track the sum of the last 32 angle deltas by adding the
+   // current delta and subtracting the oldest delta
+   static int32_t angleDiffSum = 0;
+   angleDiffSum += angleDiff;
+   angleDiffSum -= angleDiffs[angleDiffOffset];
+
+   // Store the current delta in the ring buffer
+   angleDiffs[angleDiffOffset++] = angleDiff;
+   angleDiffOffset &= 0x1F;
+
+   // Integrate the sum of the last 32 angle deltas
+   rotorAngleFiltered += angleDiffSum / 32;
+
+   // Integrate slip frequency to ge slip angle
+   static uint16_t slipAngle = 0;
    slipAngle += slipIncr;
 
+   // Estimate frequency
+   frq = polePairRatio * Encoder::GetRotorFrequency() + fslip;
    if (frq < 0) frq = 0;
 
-   angle = polePairRatio * rotorAngle + slipAngle;
+   // Calculate output angle by adding slip angle to rotor angle
+   angle = polePairRatio * rotorAngleFiltered + slipAngle;
 }
 
 void PwmGeneration::Charge()
