@@ -52,22 +52,8 @@ void PwmGeneration::Run()
       s32fp fslipmax  = Param::Get(Param::fslipmax);
       s32fp fslipmin  = Param::Get(Param::fslipmin);
       s32fp throtcur  = Param::Get(Param::throtcur);
-      // Regen settings
-      s32fp rslipmin  = Param::Get(Param::rslipmin);
-      s32fp rslipmax  = Param::Get(Param::rslipmax);
-      s32fp rcurrent  = Param::Get(Param::rcurrent);
       // Fetch current correction gain
       s32fp curkp     = Param::Get(Param::curkp);
-      s32fp ncurkp    = Param::Get(Param::ncurkp);
-
-      // Apply regen settings is torque request is negative
-      if (torqueRequest < 0)
-      {
-         fslipmin  = rslipmin;
-         fslipmax  = rslipmax;
-         fslipweak = rslipmax;
-         throtcur  = rcurrent;
-      }
 
       // Set ampnom to magnitude of torque request
       ampnom = ABS(torqueRequest);
@@ -88,8 +74,6 @@ void PwmGeneration::Run()
 
       // Calculate current error
       s32fp ierror = ilmaxtarget - ilmax;
-      // If error is negative, use negative current correction gain
-      if (ierror < 0) curkp = ncurkp;
       // Calculate and apply voltage correction
       s32fp correction = (ierror * curkp) / 4096;
       amp += correction;
@@ -114,9 +98,6 @@ void PwmGeneration::Run()
       // Set slip according to torque request and fslipmax
       fslipmax += fweak >> 8;
       fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
-
-      // Invert slip if torque request is negative
-      if (torqueRequest < 0) fslip = -fslip;
 
       // Set parameters for logging
       Param::SetFixed(Param::ampnom, ampnom);
@@ -164,11 +145,8 @@ void PwmGeneration::Run()
 
 void PwmGeneration::SetTorquePercent(float torque)
 {
-   // Don't allow regen to accelerate backwards
-   if (Encoder::GetRotorDirection() != Param::GetInt(Param::dir) && torque < 0)
-      torque = 0;
-   // Set torque request
-   torqueRequest = FP_FROMFLT(torque);
+   // Set torque request, positive only
+   torqueRequest = MAX(FP_FROMFLT(torque), 0);
 }
 
 void PwmGeneration::PwmInit()
