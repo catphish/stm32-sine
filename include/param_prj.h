@@ -42,6 +42,8 @@
     PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      10000,  128,    107 ) \
 
 #define MOTOR_PARAMETERS_SINE \
+    PARAM_ENTRY(CAT_MOTOR,   fweakmin,   "Hz",       0,      1000,   200,    35  ) \
+    PARAM_ENTRY(CAT_MOTOR,   fweakmax,   "Hz",       0,      1000,   300,    37  ) \
     PARAM_ENTRY(CAT_MOTOR,   fslipweak,  "Hz",       0,      20,     4,      36  ) \
     PARAM_ENTRY(CAT_MOTOR,   fslipmax,   "Hz",       0,      20,     3,      33  ) \
     PARAM_ENTRY(CAT_MOTOR,   fslipmin,   "Hz",       0,      20,     0,      34  ) \

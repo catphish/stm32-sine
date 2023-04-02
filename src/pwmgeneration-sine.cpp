@@ -48,6 +48,8 @@ void PwmGeneration::Run()
       int dir = Param::GetInt(Param::dir);
 
       // Fetch settings
+      s32fp fweakmin  = Param::Get(Param::fweakmin);
+      s32fp fweakmax  = Param::Get(Param::fweakmax);
       s32fp fslipweak = Param::Get(Param::fslipweak);
       s32fp fslipmax  = Param::Get(Param::fslipmax);
       s32fp fslipmin  = Param::Get(Param::fslipmin);
@@ -85,18 +87,19 @@ void PwmGeneration::Run()
       else if (amp < 0)
          amp = 0;
 
-      // Calculate maximum field weakening
-      s32fp fweakmax = ((fslipweak - fslipmax) << 8) | 0xFF;
-      if (fweakmax < 0) fweakmax = 0;
-
-      // If voltage is too low, increase field weakening, else reduce it
-      if (amp == maxamp && correction > 0)
-         fweak = MIN(fweak + 1, fweakmax);
-      else if (fweak > 0)
-         fweak -= 1;
+      // If field weakening is configured, calculate a new fslipmax accordingly
+      if (fslipweak > fslipmax && fweakmax > fweakmin) {
+         s32fp frq = polePairRatio * Encoder::GetRotorFrequency();
+         if(frq > fweakmax)
+            // If frequency is above fweakmax, use 100% fslipweak
+            fslipmax = fslipweak;
+         else if (frq > fweakmin) {
+            // If frequency is between fweakmin and fweakmax, interpolate between fslipmax and fslipweak
+            fslipmax = fslipmax + FP_DIV(FP_MUL(fslipweak - fslipmax, frq - fweakmin), (fweakmax - fweakmin));
+         } // Otherwise fslipmax is used
+      }
 
       // Set slip according to torque request and fslipmax
-      fslipmax += fweak >> 8;
       fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
 
       // Set parameters for logging
