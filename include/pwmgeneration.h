@@ -52,8 +52,7 @@ class PwmGeneration
       static s32fp ProcessCurrents();
       static s32fp ProcessCurrents(s32fp& id, s32fp& iq);
       static void CalcNextAngleSync();
-      static void CalcNextAngleAsync(int dir);
-      static void CalcNextAngleConstant(int dir);
+      static void CalcNextAngleAsync();
       static void Charge();
       static void AcHeat();
       static s32fp GetIlMax(s32fp il1, s32fp il2);
@@ -73,6 +72,9 @@ class PwmGeneration
       static int opmode;
       static s32fp ilofs[2];
       static int polePairRatio;
+      static s32fp torqueRequest;
+      static int32_t amp;
+      static s32fp fweak;
 };
 
 #endif // PWMGENERATION_H

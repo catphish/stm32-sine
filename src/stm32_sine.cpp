@@ -128,6 +128,7 @@ static void Ms10Task(void)
    if (MOD_RUN == opmode && initWait == -1)
    {
       PwmGeneration::SetTorquePercent(torquePercent);
+      Param::SetFloat(Param::torque, torquePercent);
    }
    else if ((MOD_BOOST == opmode || MOD_BUCK == opmode) && initWait == -1)
    {
@@ -247,6 +248,8 @@ static void Ms1Task(void)
          speedCnt--;
       }
    }
+   if (Param::GetInt(Param::canperiod) == CAN_PERIOD_1MS)
+      can->SendAll();
 }
 
 /** This function is called when the user changes a parameter */
@@ -254,14 +257,6 @@ void Param::Change(Param::PARAM_NUM paramNum)
 {
    switch (paramNum)
    {
-   #if CONTROL == CTRL_SINE
-      case Param::fslipspnt:
-         PwmGeneration::SetFslip(Param::Get(Param::fslipspnt));
-         break;
-      case Param::ampnom:
-         PwmGeneration::SetAmpnom(Param::Get(Param::ampnom));
-         break;
-   #endif
       case Param::canspeed:
          can->SetBaudrate((Can::baudrates)Param::GetInt(Param::canspeed));
          break;
@@ -394,8 +389,10 @@ extern "C" int main(void)
    Param::Change(Param::nodeid);
    write_bootloader_pininit(Param::GetBool(Param::bootprec), Param::GetBool(Param::pwmpol));
 
-   while(1)
+   while(1) {
       t.Run();
+
+   }
 
    return 0;
 }
