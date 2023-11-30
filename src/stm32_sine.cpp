@@ -141,6 +141,7 @@ static void Ms10Task(void)
    if (MOD_RUN == opmode && initWait == -1)
    {
       PwmGeneration::SetTorquePercent(torquePercent);
+      Param::SetFloat(Param::torque, torquePercent);
    }
    else if ((MOD_BOOST == opmode || MOD_BUCK == opmode) && initWait == -1)
    {
@@ -254,14 +255,6 @@ void Param::Change(Param::PARAM_NUM paramNum)
 {
    switch (paramNum)
    {
-   #if CONTROL == CTRL_SINE
-      case Param::fslipspnt:
-         PwmGeneration::SetFslip(Param::Get(Param::fslipspnt));
-         break;
-      case Param::ampnom:
-         PwmGeneration::SetAmpnom(Param::Get(Param::ampnom));
-         break;
-   #endif
       case Param::canspeed:
          can->SetBaudrate((CanHardware::baudrates)Param::GetInt(Param::canspeed));
          break;

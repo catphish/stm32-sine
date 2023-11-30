@@ -37,30 +37,93 @@
 
 void PwmGeneration::Run()
 {
-   if (opmode == MOD_MANUAL || opmode == MOD_RUN || opmode == MOD_SINE)
+   if (opmode == MOD_RUN)
    {
+      // Process currents and get ilmax
+      ProcessCurrents();
+      s32fp ilmax = Param::Get(Param::ilmax);
+
+      // Get requested direction from DNR switch
       int dir = Param::GetInt(Param::seldir);
 
+      // Fetch settings
+      s32fp fweakmin  = Param::Get(Param::fweakmin);
+      s32fp fweakmax  = Param::Get(Param::fweakmax);
+      s32fp fslipweak = Param::Get(Param::fslipweak);
+      s32fp fslipmax  = Param::Get(Param::fslipmax);
+      s32fp fslipmin  = Param::Get(Param::fslipmin);
+      s32fp throtcur  = Param::Get(Param::throtcur);
+      // Fetch current correction gain
+      s32fp curkp     = Param::Get(Param::curkp);
+
+      // Set ampnom to magnitude of torque request
+      ampnom = ABS(torqueRequest);
+
+      // Calculate target current
+      s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
+
+      // Calculate alternative current limit based on DC current
+      // Ignore if voltage is near zero
+      if(SineCore::GetAmp() > 64)
+      {
+         s32fp ilmaxtargetdc = Param::GetInt(Param::idcmax) * SineCore::MAXAMP / SineCore::GetAmp() * 32;
+         if (ilmaxtargetdc < ilmaxtarget) ilmaxtarget = ilmaxtargetdc;
+      }
+
+      // Save current target for logging
+      Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
+
+      // Calculate current error
+      s32fp ierror = ilmaxtarget - ilmax;
+      // Calculate and apply voltage correction
+      s32fp correction = (ierror * curkp) / 4096;
+      amp += correction;
+
+      // Limit amplitude to 0..MAXAMP, shift by 9 bits to get more resolution
+      int32_t maxamp = (SineCore::MAXAMP << 9) | 0x1FF;
+      if (amp > maxamp)
+         amp = maxamp;
+      else if (amp < 0)
+         amp = 0;
+
+      // If field weakening is configured, calculate a new fslipmax accordingly
+      if (fslipweak > fslipmax && fweakmax > fweakmin) {
+         s32fp frq = polePairRatio * Encoder::GetRotorFrequency();
+         if(frq > fweakmax)
+            // If frequency is above fweakmax, use 100% fslipweak
+            fslipmax = fslipweak;
+         else if (frq > fweakmin) {
+            // If frequency is between fweakmin and fweakmax, interpolate between fslipmax and fslipweak
+            fslipmax = fslipmax + FP_DIV(FP_MUL(fslipweak - fslipmax, frq - fweakmin), (fweakmax - fweakmin));
+         } // Otherwise fslipmax is used
+      }
+
+      // Set slip according to torque request and fslipmax
+      fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
+
+      // Set parameters for logging
+      Param::SetFixed(Param::ampnom, ampnom);
+      Param::SetFixed(Param::fslipspnt, fslip);
+
+      // Set slip increment angle
+      slipIncr = FRQ_TO_ANGLE(fslip * dir);
+
+      // Calculate current angle
       Encoder::UpdateRotorAngle(dir);
-      s32fp ampNomLimited = LimitCurrent();
+      CalcNextAngleAsync();
 
-      if (opmode == MOD_SINE)
-         CalcNextAngleConstant(dir);
-      else
-         CalcNextAngleAsync(dir);
-
-      uint32_t amp = MotorVoltage::GetAmpPerc(frq, ampNomLimited);
-
-      SineCore::SetAmp(amp);
-      Param::SetInt(Param::amp, amp);
+      // Use SineCore module to calulate PWM duty cycles
+      SineCore::SetAmp(amp >> 9);
+      Param::SetInt(Param::amp, amp >> 9);
       Param::SetFixed(Param::fstat, frq);
       Param::SetFixed(Param::angle, DIGIT_TO_DEGREE(angle));
       SineCore::Calc(angle);
 
-      /* Shut down PWM on zero voltage request */
+      /* Shut down PWM if amplitude or direction are zero */
       if (0 == amp || 0 == dir)
       {
          timer_disable_break_main_output(PWM_TIMER);
+         amp = 0;
       }
       else
       {
@@ -84,76 +147,8 @@ void PwmGeneration::Run()
 
 void PwmGeneration::SetTorquePercent(float torque)
 {
-   int filterConst = Param::GetInt(Param::throtfilter);
-   float roundingError = FP_TOFLOAT((float)((1 << filterConst) - 1));
-   int sinecurve = Param::GetInt(Param::sinecurve);
-   float fslipmin = Param::GetFloat(Param::fslipmin);
-   float ampmin = Param::GetFloat(Param::ampmin);
-   float slipstart = Param::GetFloat(Param::slipstart);
-   float fstat = Param::GetFloat(Param::fstat);
-   float fweak = Param::GetFloat(Param::fweakcalc);
-   float fslipmax = Param::GetFloat(Param::fslipmax);
-   float fconst = Param::GetFloat(Param::fconst);
-   float fslipconstmax = Param::GetFloat(Param::fslipconstmax);
-
-   float ampnomLocal;
-   float fslipspnt = 0;
-
-   if (torque >= 0)
-   {
-      if (fstat > fweak)
-      {
-         // Fslipmax is increased up to fslipconstmax as frequency exceeds fweak
-         fslipmax += (fstat - fweak) / (fconst - fweak) * (fslipconstmax - fslipmax);
-         // Never exceed fslipconstmax!
-         fslipmax = MIN(fslipmax, fslipconstmax); //never exceed fslipconstmax!
-      }
-
-      // If simultaneous curve selected. We will ramp voltage and slip simultaneously.
-      if (sinecurve)
-      {
-         // Amplitude is simply scaled from ampmin to 100%
-         ampnomLocal = ampmin + (100.0f - ampmin) * torque / 100.0f;
-
-         // Slip is scaled from fslipmin to fslipmax
-         fslipspnt = roundingError + fslipmin + (fslipmax - fslipmin) * torque / 100.0f;
-      }
-      // If sequential curve selected. first X% throttle commands amplitude, X-100% raises slip
-      else
-      {
-         ampnomLocal = ampmin + (100.0f - ampmin) * torque / slipstart;
-
-         if (torque >= slipstart)
-         {
-            float fslipdiff = fslipmax - fslipmin;
-            fslipspnt = roundingError + fslipmin + (fslipdiff * (torque - slipstart)) / (100.0f - slipstart);
-         }
-         else
-         {
-            fslipspnt = fslipmin + roundingError;
-         }
-      }
-   }
-   else if (Encoder::GetRotorDirection() != Param::GetInt(Param::seldir))
-   {
-      // Do not apply negative torque if we are already traveling backwards.
-      fslipspnt = 0;
-      ampnomLocal = 0;
-   }
-   else
-   {
-      ampnomLocal = -torque;
-      fslipspnt = -fslipmin;
-   }
-
-   ampnomLocal = MIN(ampnomLocal, 100.0f);
-   //anticipate sudden changes by filtering
-   ampnom = IIRFILTER(ampnom, FP_FROMFLT(ampnomLocal), filterConst);
-   fslip = IIRFILTER(fslip, FP_FROMFLT(fslipspnt), filterConst);
-   Param::Set(Param::ampnom, ampnom);
-   Param::Set(Param::fslipspnt, fslip);
-
-   slipIncr = FRQ_TO_ANGLE(fslip);
+   // Set torque request, positive only
+   torqueRequest = MAX(FP_FROMFLT(torque), 0);
 }
 
 void PwmGeneration::PwmInit()
@@ -162,119 +157,41 @@ void PwmGeneration::PwmInit()
    pwmfrq = TimerSetup(Param::GetInt(Param::deadtime), Param::GetInt(Param::pwmpol));
    slipIncr = FRQ_TO_ANGLE(fslip);
    Encoder::SetPwmFrequency(pwmfrq);
+   PwmGeneration::amp = 0;
 
    if (opmode == MOD_ACHEAT)
       AcHeatTimerSetup();
 }
 
-s32fp PwmGeneration::LimitCurrent()
-{
-   static s32fp curLimSpntFiltered = 0, slipFiltered = 0;
-   s32fp slipmin = Param::Get(Param::fslipmin);
-   s32fp imax = Param::Get(Param::iacmax);
-   s32fp ilMax = ProcessCurrents();
-
-   //setting of 0 disables current limiting
-   if (imax == 0) return ampnom;
-
-   s32fp a = imax / 20; //Start acting at 80% of imax
-   s32fp imargin = imax - ilMax;
-   s32fp curLimSpnt = FP_DIV(100 * imargin, a);
-   s32fp slipSpnt = FP_DIV(FP_MUL(fslip, imargin), a);
-   slipSpnt = MAX(slipmin, slipSpnt);
-   curLimSpnt = MAX(FP_FROMINT(40), curLimSpnt); //Never go below 40%
-   int filter = Param::GetInt(curLimSpnt < curLimSpntFiltered ? Param::ifltfall : Param::ifltrise);
-   curLimSpntFiltered = IIRFILTER(curLimSpntFiltered, curLimSpnt, filter);
-   slipFiltered = IIRFILTER(slipFiltered, slipSpnt, 1);
-
-   s32fp ampNomLimited = MIN(ampnom, curLimSpntFiltered);
-   slipSpnt = MIN(fslip, slipFiltered);
-   slipIncr = FRQ_TO_ANGLE(slipSpnt);
-
-   if (curLimSpnt < ampnom)
-      ErrorMessage::Post(ERR_CURRENTLIMIT);
-
-   return ampNomLimited;
-}
-
 s32fp PwmGeneration::GetIlMax(s32fp il1, s32fp il2)
 {
    s32fp il3 = -il1 - il2;
-   s32fp ilMax = FP_MUL(il1, il1) + FP_MUL(il2, il2) + FP_MUL(il3, il3);
-   ilMax = fp_sqrt(ilMax);
+   s32fp ilMax = fp_hypot3(il1, il2, il3);
    ilMax = FP_MUL(ilMax, INV_SQRT_1_5);
 
    return ilMax;
 }
 
-PwmGeneration::EdgeType PwmGeneration::CalcRms(s32fp il, EdgeType& lastEdge, s32fp& max, s32fp& rms, int& samples, s32fp prevRms)
-{
-   const s32fp oneOverSqrt2 = FP_FROMFLT(0.707106781187);
-   int minSamples = pwmfrq / (4 * FP_TOINT(frq));
-   EdgeType edgeType = NoEdge;
-
-   minSamples = MAX(10, minSamples);
-
-   if (samples > minSamples)
-   {
-      if (lastEdge == NegEdge && il > 0)
-         edgeType = PosEdge;
-      else if (lastEdge == PosEdge && il < 0)
-         edgeType = NegEdge;
-   }
-
-   if (edgeType != NoEdge)
-   {
-      rms = (FP_MUL(oneOverSqrt2, max) + prevRms) / 2; // average with previous rms reading
-
-      max = 0;
-      samples = 0;
-      lastEdge = edgeType;
-   }
-
-   il = ABS(il);
-   max = MAX(il, max);
-   samples++;
-
-   return edgeType;
-}
-
 s32fp PwmGeneration::ProcessCurrents()
 {
-   static s32fp currentMax[2];
-   static int samples[2] = { 0 };
-   static EdgeType lastEdge[2] = { PosEdge, PosEdge };
-
    s32fp il1 = GetCurrent(AnaIn::il1, ilofs[0], Param::Get(Param::il1gain));
    s32fp il2 = GetCurrent(AnaIn::il2, ilofs[1], Param::Get(Param::il2gain));
-   s32fp rms;
-   s32fp il1PrevRms = Param::Get(Param::il1rms);
-   s32fp il2PrevRms = Param::Get(Param::il2rms);
-   EdgeType edge = CalcRms(il1, lastEdge[0], currentMax[0], rms, samples[0], il1PrevRms);
-
-   if (edge != NoEdge)
-   {
-      Param::SetFixed(Param::il1rms, rms);
-
-      if (opmode != MOD_BOOST || opmode != MOD_BUCK)
-      {
-         //rough approximation as we do not take power factor into account
-         s32fp idc = (SineCore::GetAmp() * rms) / SineCore::MAXAMP;
-         idc = FP_MUL(idc, FP_FROMFLT(1.2247)); //multiply by sqrt(3)/sqrt(2)
-         idc *= fslip < 0 ? -1 : 1;
-         Param::SetFixed(Param::idc, idc);
-      }
-   }
-   if (CalcRms(il2, lastEdge[1], currentMax[1], rms, samples[1], il2PrevRms))
-   {
-      Param::SetFixed(Param::il2rms, rms);
-   }
 
    s32fp ilMax = GetIlMax(il1, il2);
 
    Param::SetFixed(Param::il1, il1);
    Param::SetFixed(Param::il2, il2);
    Param::SetFixed(Param::ilmax, ilMax);
+
+   // Multiply AC current by DC voltage fraction to get DC current
+   s32fp idc = ilMax * SineCore::GetAmp() / SineCore::MAXAMP;
+   // In theory we should divide by sqrt(2) to convert to RMS
+   // and then multiply by sqrt(3) to convert to single phase
+   // We can just multiply by 1.2247 to get the same result
+   // but I'm not going to bother because the result is not
+   // scaled correctly anyway.
+   // idc = FP_MUL(idc, FP_FROMFLT(1.2247));
+   Param::SetFixed(Param::idc, idc);
 
    return ilMax;
 }

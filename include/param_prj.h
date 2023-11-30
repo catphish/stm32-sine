@@ -25,7 +25,7 @@
    3. Display values
  */
 //Next param id (increase when adding new parameter!): 159
-//Next value Id: 2053
+//Next value Id: 2056
 /*              category     name         unit       min     max     default id */
 
 #define MOTOR_PARAMETERS_COMMON \
@@ -37,17 +37,16 @@
     PARAM_ENTRY(CAT_MOTOR,   numimp,      "ppr",     8,      8192,   60,     15  ) \
     PARAM_ENTRY(CAT_MOTOR,   dirchrpm,    "rpm",     0,      20000,  100,    87  ) \
     PARAM_ENTRY(CAT_MOTOR,   dirmode,     DIRMODES,  0,      4,      1,      95  ) \
+    PARAM_ENTRY(CAT_MOTOR,   throtcur,    "A/%",     0,      20,     1,      105 ) \
+    PARAM_ENTRY(CAT_MOTOR,   curkp,       "",        0,      10000,  128,    110 ) \
     PARAM_ENTRY(CAT_MOTOR,   snsm,        SNS_M,     12,     23,     12,     46  )
 
 #define MOTOR_PARAMETERS_SINE \
-    PARAM_ENTRY(CAT_MOTOR,   boost,       "dig",     0,      37813,  1700,   1   ) \
-    PARAM_ENTRY(CAT_MOTOR,   fweak,       "Hz",      0,      1000,   90,     2   ) \
-    PARAM_ENTRY(CAT_MOTOR,   fweakstrt,   "Hz",      0,      1000,   400,    134 ) \
-    PARAM_ENTRY(CAT_MOTOR,   fconst,      "Hz",      0,      1000,   180,    99  ) \
-    PARAM_ENTRY(CAT_MOTOR,   udcnom,      "V",       0,      1000,   0,      78  ) \
-    PARAM_ENTRY(CAT_MOTOR,   fslipmin,    "Hz",      0.3,    10,     1,      37  ) \
-    PARAM_ENTRY(CAT_MOTOR,   fslipmax,    "Hz",      0.3,    10,     3,      33  ) \
-    PARAM_ENTRY(CAT_MOTOR,   fslipconstmax,"Hz",     0,      10,     5,      100 )
+    PARAM_ENTRY(CAT_MOTOR,   fweakmin,   "Hz",       0,      1000,   200,    35  ) \
+    PARAM_ENTRY(CAT_MOTOR,   fweakmax,   "Hz",       0,      1000,   300,    37  ) \
+    PARAM_ENTRY(CAT_MOTOR,   fslipweak,  "Hz",       0,      20,     4,      36  ) \
+    PARAM_ENTRY(CAT_MOTOR,   fslipmax,   "Hz",       0,      20,     3,      33  ) \
+    PARAM_ENTRY(CAT_MOTOR,   fslipmin,   "Hz",       0,      20,     0,      34  )
 
 #define MOTOR_PARAMETERS_FOC \
     PARAM_ENTRY(CAT_MOTOR,   iqkp,        "",        0,      20000,  32,     107 ) \
@@ -93,11 +92,6 @@
     PARAM_ENTRY(CAT_DERATE,  accelmax,    "rpm/10ms",1,      1000,  1000,    153 ) \
     PARAM_ENTRY(CAT_DERATE,  accelflt,    "dig",     1,      5,     3,       154 )
 
-#define DERATE_PARAMETERS_SINE \
-    PARAM_ENTRY(CAT_DERATE,  iacmax,      "A",       0,      5000,   5000,   89  ) \
-    PARAM_ENTRY(CAT_DERATE,  ifltrise,    "dig",     0,      32,    10,      91  ) \
-    PARAM_ENTRY(CAT_DERATE,  ifltfall,    "dig",     0,      32,     3,      92  ) \
-
 #define CHARGER_PARAMETERS \
     PARAM_ENTRY(CAT_CHARGER, chargemode,  CHARGEMODS,0,      4,      0,      74  ) \
     PARAM_ENTRY(CAT_CHARGER, chargecur,   "A",       0,      50,     0,      71  ) \
@@ -115,15 +109,6 @@
     PARAM_ENTRY(CAT_THROTTLE,potmode,     POTMODES,  0,      6,      0,      82  ) \
     PARAM_ENTRY(CAT_THROTTLE,throtramp,   "%/10ms",  0.1,    100,    100,    81  ) \
     PARAM_ENTRY(CAT_THROTTLE,throtramprpm,"rpm",     0,      20000,  20000,  85  )
-
-#define THROTTLE_PARAMETERS_SINE \
-    PARAM_ENTRY(CAT_THROTTLE,ampmin,      "%",       0,      100,    10,     4   ) \
-    PARAM_ENTRY(CAT_THROTTLE,slipstart,   "%",       10,     100,    50,     90  ) \
-    PARAM_ENTRY(CAT_THROTTLE,sinecurve,   SINECURVES,0,      1,      0,      146 ) \
-    PARAM_ENTRY(CAT_THROTTLE,throtfilter, "dig",     0,      10,     4,      147 )
-
-#define THROTTLE_PARAMETERS_FOC \
-   PARAM_ENTRY(CAT_THROTTLE,throtcur,    "A/%",       0,     10,     1,     105  )
 
 #define REGEN_PARAMETERS \
     PARAM_ENTRY(CAT_REGEN,   brakeregen,  "%",       -100,   0,      -50,    38  ) \
@@ -180,6 +165,7 @@
     VALUE_ENTRY(pot2,        "dig",   2016 ) \
     VALUE_ENTRY(regenpreset, "%",     2051 ) \
     VALUE_ENTRY(potnom,      "%",     2017 ) \
+    VALUE_ENTRY(torque,      "%",     2052 ) \
     VALUE_ENTRY(seldir,      DIRS,    2018 ) \
     VALUE_ENTRY(rotordir,    DIRS,    2053 ) \
     VALUE_ENTRY(tmphs,       "°C",    2019 ) \
@@ -202,10 +188,9 @@
 #define VALUES_SINE \
     VALUE_ENTRY(ilmax,       "A",     2005 ) \
     VALUE_ENTRY(uac,         "V",     2006 ) \
-    VALUE_ENTRY(il1rms,      "A",     2007 ) \
-    VALUE_ENTRY(il2rms,      "A",     2008 ) \
-    VALUE_ENTRY(boostcalc,   "dig",   2009 ) \
-    VALUE_ENTRY(fweakcalc,   "Hz",    2010 ) \
+    VALUE_ENTRY(fslipspnt,   "Hz",    2049 ) \
+    VALUE_ENTRY(ampnom,      "dig",   2054 ) \
+    VALUE_ENTRY(ilmaxtarget, "A",     2055 ) \
 
 #define VALUES_FOC \
     VALUE_ENTRY(id,      "A",     2049 ) \
@@ -220,14 +205,10 @@
     MOTOR_PARAMETERS_COMMON \
     INVERTER_PARAMETERS_COMMON \
     THROTTLE_PARAMETERS_COMMON \
-    THROTTLE_PARAMETERS_SINE \
     REGEN_PARAMETERS \
     DERATE_PARAMETERS_COMMON \
-    DERATE_PARAMETERS_SINE \
     CHARGER_PARAMETERS \
     AUTOMATION_CONTACT_PWM_COMM_PARAMETERS \
-    TESTP_ENTRY(CAT_TEST,    fslipspnt,   "Hz",      -100,   1000,   0,      151 ) \
-    TESTP_ENTRY(CAT_TEST,    ampnom,      "%",       0,      100,    0,      152 ) \
     VALUE_BLOCK1 \
     VALUES_SINE \
     VALUE_BLOCK2
