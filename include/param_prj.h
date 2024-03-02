@@ -47,6 +47,7 @@
     PARAM_ENTRY(CAT_MOTOR,   fslipweak,  "Hz",       0,      20,     4,      36  ) \
     PARAM_ENTRY(CAT_MOTOR,   fslipmax,   "Hz",       0,      20,     3,      33  ) \
     PARAM_ENTRY(CAT_MOTOR,   fslipmin,   "Hz",       0,      20,     0,      34  ) \
+    PARAM_ENTRY(CAT_MOTOR,   vhzregen,   "cV/Hz",    0,      20000 , 0,      44  ) \
 
 #define MOTOR_PARAMETERS_FOC \
     PARAM_ENTRY(CAT_MOTOR,   curki,       "",        0,      100000, 20000,  108 ) \

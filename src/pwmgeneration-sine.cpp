@@ -56,29 +56,62 @@ void PwmGeneration::Run()
       s32fp throtcur  = Param::Get(Param::throtcur);
       // Fetch current correction gain
       s32fp curkp     = Param::Get(Param::curkp);
+      // Fetch regen V/Hz curve.
+      int32_t vhzregen = Param::GetInt(Param::vhzregen);
 
-      // Set ampnom to magnitude of torque request
-      ampnom = ABS(torqueRequest);
+      if (torqueRequest < 0) { // If torque is negative, do regen
+         // Set slip betwen 0 and fslipmax. This is negative because torqueRequest is negative
+         fslip = FP_MUL(fslipmax, torqueRequest) / 100;
 
-      // Calculate target current
-      s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
+         // Do an extra local calculation of the electrical frequency adding the (negative) slip
+         s32fp lfrq = polePairRatio * Encoder::GetRotorFrequency();
+         lfrq += fslip;
+         if(lfrq < 0) lfrq = 0;
 
-      // Calculate alternative current limit based on DC current
-      // Ignore if voltage is near zero
-      if(SineCore::GetAmp() > 64)
-      {
-         s32fp ilmaxtargetdc = Param::GetInt(Param::idcmax) * SineCore::MAXAMP / SineCore::GetAmp() * 32;
-         if (ilmaxtargetdc < ilmaxtarget) ilmaxtarget = ilmaxtargetdc;
+         // Set amp using a fixed V/Hz ratio
+         amp = lfrq * vhzregen; // A value of 3025 gives full voltage at 200Hz
+
+         // Log current target as zero for logging only
+         Param::SetFixed(Param::ilmaxtarget, 0);
+      } else { // If torque is positive, do active current control
+         // Set ampnom to magnitude of torque request
+         ampnom = ABS(torqueRequest);
+
+         // Calculate target current
+         s32fp ilmaxtarget = FP_MUL(throtcur, ampnom);
+
+         // Calculate alternative current limit based on DC current
+         // Ignore if voltage is near zero
+         if(SineCore::GetAmp() > 64)
+         {
+            s32fp ilmaxtargetdc = Param::GetInt(Param::idcmax) * SineCore::MAXAMP / SineCore::GetAmp() * 32;
+            if (ilmaxtargetdc < ilmaxtarget) ilmaxtarget = ilmaxtargetdc;
+         }
+
+         // Save current target for logging
+         Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
+
+         // Calculate current error
+         s32fp ierror = ilmaxtarget - ilmax;
+         // Calculate and apply voltage correction
+         s32fp correction = (ierror * curkp) / 4096;
+         amp += correction;
+
+         // If field weakening is configured, calculate a new fslipmax accordingly
+         if (fslipweak > fslipmax && fweakmax > fweakmin) {
+            s32fp frq = polePairRatio * Encoder::GetRotorFrequency();
+            if(frq > fweakmax)
+               // If frequency is above fweakmax, use 100% fslipweak
+               fslipmax = fslipweak;
+            else if (frq > fweakmin) {
+               // If frequency is between fweakmin and fweakmax, interpolate between fslipmax and fslipweak
+               fslipmax = fslipmax + FP_DIV(FP_MUL(fslipweak - fslipmax, frq - fweakmin), (fweakmax - fweakmin));
+            } // Otherwise fslipmax is used
+         }
+
+         // Set slip according to torque request and fslipmax
+         fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
       }
-
-      // Save current target for logging
-      Param::SetFixed(Param::ilmaxtarget, ilmaxtarget);
-
-      // Calculate current error
-      s32fp ierror = ilmaxtarget - ilmax;
-      // Calculate and apply voltage correction
-      s32fp correction = (ierror * curkp) / 4096;
-      amp += correction;
 
       // Limit amplitude to 0..MAXAMP, shift by 9 bits to get more resolution
       int32_t maxamp = (SineCore::MAXAMP << 9) | 0x1FF;
@@ -86,21 +119,6 @@ void PwmGeneration::Run()
          amp = maxamp;
       else if (amp < 0)
          amp = 0;
-
-      // If field weakening is configured, calculate a new fslipmax accordingly
-      if (fslipweak > fslipmax && fweakmax > fweakmin) {
-         s32fp frq = polePairRatio * Encoder::GetRotorFrequency();
-         if(frq > fweakmax)
-            // If frequency is above fweakmax, use 100% fslipweak
-            fslipmax = fslipweak;
-         else if (frq > fweakmin) {
-            // If frequency is between fweakmin and fweakmax, interpolate between fslipmax and fslipweak
-            fslipmax = fslipmax + FP_DIV(FP_MUL(fslipweak - fslipmax, frq - fweakmin), (fweakmax - fweakmin));
-         } // Otherwise fslipmax is used
-      }
-
-      // Set slip according to torque request and fslipmax
-      fslip = fslipmin + FP_MUL(ampnom, (fslipmax - fslipmin)) / 100;
 
       // Set parameters for logging
       Param::SetFixed(Param::ampnom, ampnom);
@@ -148,8 +166,11 @@ void PwmGeneration::Run()
 
 void PwmGeneration::SetTorquePercent(float torque)
 {
-   // Set torque request, positive only
-   torqueRequest = MAX(FP_FROMFLT(torque), 0);
+   // Don't allow regen to accelerate backwards
+   if (Encoder::GetRotorDirection() != Param::GetInt(Param::dir) && torque < 0)
+      torque = 0;
+   // Set torque request
+   torqueRequest = FP_FROMFLT(torque);
 }
 
 void PwmGeneration::PwmInit()
