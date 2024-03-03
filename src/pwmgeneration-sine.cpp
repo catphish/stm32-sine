@@ -69,7 +69,16 @@ void PwmGeneration::Run()
          if(lfrq < 0) lfrq = 0;
 
          // Set amp using a fixed V/Hz ratio
-         amp = lfrq * vhzregen; // A value of 3025 gives full voltage at 200Hz
+         int32_t amptarget = lfrq * vhzregen; // A value of 3025 gives full voltage at 200Hz
+
+         // If rotor frequency is below brkrampstr, linearly reduce voltage to zero
+         float rotorfreq = FP_TOFLOAT(Encoder::GetRotorFrequency());
+         float brkrampstr = Param::GetFloat(Param::regenrampstr);
+         if(rotorfreq < brkrampstr) amptarget = amptarget * rotorfreq / brkrampstr;
+
+         // Adjust amp towards amptarget
+         if(amp < amptarget) amp += curkp / 4;
+         else amp -= curkp;
 
          // Log current target as zero for logging only
          Param::SetFixed(Param::ilmaxtarget, 0);

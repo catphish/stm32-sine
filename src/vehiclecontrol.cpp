@@ -211,10 +211,10 @@ float VehicleControl::ProcessThrottle()
       float rotorfreq = FP_TOFLOAT(Encoder::GetRotorFrequency());
       float brkrampstr = Param::GetFloat(Param::regenrampstr);
 
-      if (rotorfreq < brkrampstr && finalSpnt < 0)
-      {
-         finalSpnt = (rotorfreq / brkrampstr) * finalSpnt;
-      }
+      // if (rotorfreq < brkrampstr && finalSpnt < 0)
+      // {
+      //    finalSpnt = (rotorfreq / brkrampstr) * finalSpnt;
+      // }
 
 #if CONTROL == CTRL_FOC
       if (finalSpnt < 0)
